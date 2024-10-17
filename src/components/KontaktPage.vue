@@ -1,7 +1,7 @@
 <template>
     <div>
       <h1>Kontakt</h1>
-      <p>Zde nás můžete kontaktovat.</p>
+      <p>Zde nás můžete kontaktovat. TEST</p>
     </div>
   </template>
   
