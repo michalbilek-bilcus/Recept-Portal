@@ -28,12 +28,13 @@
         </ul>
       </div>
 
-      <!-- Uživatelský profil a odhlášení -->
+      <!-- Uživatelský profil - Registrovat se a Přihlásit se -->
       <div class="navbar-nav ml-auto d-flex align-items-center mr-3">
         <div class="nav-item d-flex align-items-center">
           <img src="https://cdn-icons-png.flaticon.com/512/147/147144.png" alt="user-icon" width="30" height="30" class="mr-2" style="margin-right: 10px;">
         </div>
-        <button class="btn btn-outline-danger ml-2">Odhlásit se</button>
+        <router-link to="/registrace" class="btn btn-outline-primary ml-2">Registrovat se</router-link>
+        <router-link to="/prihlaseni" class="btn btn-outline-success ml-2">Přihlásit se</router-link>
       </div>
     </nav>
 
