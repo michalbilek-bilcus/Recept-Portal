@@ -1,30 +1,31 @@
 <template>
-    <div class="register-form">
-      <h2>Registrace</h2>
-      <form @submit.prevent="register">
-        <div>
-          <label for="username">Uživatelské jméno:</label>
-          <input type="text" id="username" v-model="username" required />
-        </div>
-        <div>
-          <label for="email">Email:</label>
-          <input type="email" id="email" v-model="email" required />
-        </div>
-        <div>
-          <label for="password">Heslo:</label>
-          <input type="password" id="password" v-model="password" required />
-        </div>
-        <div>
-          <label for="confirmPassword">Potvrzení hesla:</label>
-          <input type="password" id="confirmPassword" v-model="confirmPassword" required />
-        </div>
-        <button type="submit">Registrovat</button>
-      </form>
-      <p v-if="errorMessage">{{ errorMessage }}</p>
-    </div>
-  </template>
-  
-  <script>
+  <div class="register-form container mt-5">
+    <h2 class="text-center mb-4">Registrace</h2>
+    <form @submit.prevent="register" class="bg-light p-5 rounded shadow-sm">
+      <div class="form-group mb-3">
+        <label for="username">Uživatelské jméno:</label>
+        <input type="text" id="username" v-model="username" class="form-control" required />
+      </div>
+      <div class="form-group mb-3">
+        <label for="email">Email:</label>
+        <input type="email" id="email" v-model="email" class="form-control" required />
+      </div>
+      <div class="form-group mb-3">
+        <label for="password">Heslo:</label>
+        <input type="password" id="password" v-model="password" class="form-control" required />
+      </div>
+      <div class="form-group mb-3">
+        <label for="confirmPassword">Potvrzení hesla:</label>
+        <input type="password" id="confirmPassword" v-model="confirmPassword" class="form-control" required />
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Registrovat</button>
+      <button @click="goHome" class="btn btn-link w-100 mt-3">Domů</button>
+      <p v-if="errorMessage" class="text-danger mt-3">{{ errorMessage }}</p>
+    </form>
+  </div>
+</template>
+
+<script>
 export default {
   data() {
     return {
@@ -38,13 +39,19 @@ export default {
   methods: {
     async register() {
       try {
+        // Kontrola, jestli se hesla shodují
+        if (this.password !== this.confirmPassword) {
+          this.errorMessage = "Hesla se neshodují.";
+          return;
+        }
+
         const response = await fetch('http://localhost:3000/register', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json' // Ověřte, že tento header je správně nastaven
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            name: this.username,     // použijte this.username místo this.name
+            name: this.username,
             email: this.email,
             password: this.password
           })
@@ -56,20 +63,24 @@ export default {
 
         const data = await response.json();
         console.log('Registrace úspěšná', data);
+
+        // Uložení informací o uživatelském účtu do localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Zavoláme metodu updateLoginStatus v App.vue pro změnu isLoggedIn na true
+        this.$root.updateLoginStatus(true);
+
+        // Přesměrování na homepage po úspěšné registraci
+        this.$router.push('/homepage');
       } catch (error) {
         console.error('Chyba při registraci:', error);
-        this.errorMessage = error.message; // Nastavení chybové zprávy do komponenty
+        this.errorMessage = error.message;
       }
+    },
+    goHome() {
+      // Přesměrování na domovskou stránku
+      this.$router.push('/homepage');
     }
   }
 };
 </script>
-
-  
-  <style scoped>
-  /* Tvůj CSS styl pro formulář */
-  .register-form {
-    /* Přidej styly podle potřeby */
-  }
-  </style>
-  

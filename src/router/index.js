@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import HomePage from "../components/HomePage.vue";
-import RegisterPage from "../components/RegisterPage.vue"; // Nový import
-import LoginPage from "../components/LoginPage.vue";       // Nový import
+import RegisterPage from "../components/RegisterPage.vue";
+import LoginPage from "../components/LoginPage.vue";
 
 const routes = [
-  { path: "/", component: HomePage },
-  { path: "/registrace", component: RegisterPage },        // Přidaná cesta pro registraci
-  { path: "/prihlaseni", component: LoginPage },           // Přidaná cesta pro přihlášení
+  { path: "/homepage", component: HomePage, name: "homepage" },  // Přidání názvu trasy
+  { path: "/registrace", component: RegisterPage, name: "registrace" }, // Přidání názvu trasy
+  { path: "/prihlaseni", component: LoginPage, name: "prihlaseni" }, // Přidání názvu trasy
 ];
 
 const router = createRouter({
