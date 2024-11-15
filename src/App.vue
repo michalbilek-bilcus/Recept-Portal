@@ -2,7 +2,7 @@
   <div id="app">
     <!-- Zobrazí navbar pouze na stránkách, které nejsou 'login' nebo 'register' -->
     <nav v-if="!isAuthPage" class="navbar navbar-expand-lg navbar-light bg-light">
-      <router-link class="navbar-brand" to="/" style="margin-left: 40px;">Receptový portál</router-link>
+      <router-link class="navbar-brand" to="/homepage" style="margin-left: 40px;">Receptový portál</router-link>
       <button
         class="navbar-toggler"
         type="button"
@@ -16,9 +16,6 @@
       </button>
       <div class="collapse navbar-collapse d-flex justify-content-center" id="navbarNav">
         <ul class="navbar-nav">
-          <li class="nav-item">
-            <router-link class="nav-link" to="/homepage">Domů</router-link>
-          </li>
           <li class="nav-item">
             <router-link class="nav-link" to="/recepty">Recepty</router-link>
           </li>
