@@ -2,7 +2,6 @@
   <div id="app">
     <!-- Zobrazí navbar pouze na stránkách, které nejsou 'login' nebo 'register' -->
     <nav v-if="!isAuthPage" class="navbar navbar-expand-lg navbar-light bg-light">
-      <!-- Zvětšená mezera vlevo pro logo -->
       <router-link class="navbar-brand" to="/" style="margin-left: 40px;">Receptový portál</router-link>
       <button
         class="navbar-toggler"
@@ -31,7 +30,10 @@
 
       <div class="navbar-nav ml-auto d-flex align-items-center" style="margin-right: 30px;">
         <div v-if="isLoggedIn" class="nav-item d-flex align-items-center">
-          <img src="https://cdn-icons-png.flaticon.com/512/147/147144.png" alt="user-icon" width="30" height="30" class="mr-2" style="margin-right: 15px;">
+          <!-- Kliknutí na ikonu přesměruje na ProfilePage -->
+          <router-link to="/profil">
+            <img src="https://cdn-icons-png.flaticon.com/512/147/147144.png" alt="user-icon" width="30" height="30" class="mr-2" style="margin-right: 15px; cursor: pointer;">
+          </router-link>
         </div>
 
         <router-link v-if="!isLoggedIn" to="/registrace" class="btn btn-outline-primary ml-3">Registrovat se</router-link>
