@@ -152,6 +152,96 @@ app.get('/datareceptprofile', (req, res) => {
     });
 });
 
+// Endpoint pro načtení detailů receptu podle jeho ID
+app.get('/recipe/:recipeId', (req, res) => {
+    const recipeId = req.params.recipeId;
+
+    if (!recipeId) {
+        return res.status(400).json({ error: "ID receptu je povinné." });
+    }
+
+    // Dotaz pro získání základních informací o receptu
+    const recipeQuery = `
+        SELECT r.id, r.title, r.description, r.image, r.created_at, u.name AS author
+        FROM recipes r
+        JOIN users u ON r.user_id = u.id
+        WHERE r.id = ?
+    `;
+
+    connection.query(recipeQuery, [recipeId], (err, recipeResults) => {
+        if (err) {
+            console.error('Chyba při načítání receptu:', err);
+            return res.status(500).json({ error: "Chyba při načítání receptu." });
+        }
+
+        if (recipeResults.length === 0) {
+            return res.status(404).json({ error: "Recept nenalezen." });
+        }
+
+        const recipe = recipeResults[0];
+
+        // Dotaz pro načtení ingrediencí receptu
+        const ingredientsQuery = `
+            SELECT i.name, ri.amount
+            FROM recipe_ingredients ri
+            JOIN ingredients i ON ri.ingredient_id = i.id
+            WHERE ri.recipe_id = ?
+        `;
+
+        connection.query(ingredientsQuery, [recipeId], (err, ingredientResults) => {
+            if (err) {
+                console.error('Chyba při načítání ingrediencí:', err);
+                return res.status(500).json({ error: "Chyba při načítání ingrediencí." });
+            }
+
+            // Dotaz pro načtení kroků receptu
+            const instructionsQuery = `
+                SELECT ri.step_number, ri.instruction
+                FROM recipe_instructions ri
+                WHERE ri.recipe_id = ?
+
+            `;
+
+            connection.query(instructionsQuery, [recipeId], (err, instructionResults) => {
+                if (err) {
+                    console.error('Chyba při načítání instrukcí:', err);
+                    return res.status(500).json({ error: "Chyba při načítání instrukcí." });
+                }
+
+                // Sestavení odpovědi do JSON formátu
+                const response = {
+                    id: recipe.id,
+                    title: recipe.title,
+                    description: recipe.description,
+                    image: recipe.image,
+                    created_at: recipe.created_at,
+                    author: recipe.author,
+                    ingredients: ingredientResults.map(ingredient => ({
+                        name: ingredient.name,
+                        amount: ingredient.amount
+                    })),
+                    instructions: instructionResults.map(instruction => ({
+                        step_number: instruction.step_number,
+                        instruction: instruction.instruction
+                    }))
+                };
+
+                res.status(200).json(response);
+            });
+        });
+    });
+});
+
+app.get('/random-recipes', (req, res) => {
+    // Dotaz na 5 náhodných receptů
+    connection.query('SELECT * FROM recipes ORDER BY RAND() LIMIT 5', (err, results) => {
+      if (err) {
+        console.error('Chyba při načítání receptů: ', err);
+        return res.status(500).json({ error: 'Chyba při načítání receptů.' });
+      }
+      res.json(results);  // Vrátí 5 náhodných receptů
+    });
+  });
 // Spuštění serveru
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);
