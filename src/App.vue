@@ -32,6 +32,7 @@
             <img src="https://cdn-icons-png.flaticon.com/512/147/147144.png" alt="user-icon" width="30" height="30" class="mr-2" style="margin-right: 15px; cursor: pointer;">
           </router-link>
         </div>
+        <router-link v-if="isLoggedIn" to="/createrecept" class="btn btn-outline-primary ml-3">Vytvořit recept</router-link>
 
         <router-link v-if="!isLoggedIn" to="/registrace" class="btn btn-outline-primary ml-3">Registrovat se</router-link>
         <router-link v-if="!isLoggedIn" to="/prihlaseni" class="btn btn-outline-success ml-3">Přihlásit se</router-link>

@@ -73,7 +73,6 @@ app.post('/recipes', (req, res) => {
         return res.status(400).json({ error: "Název, instrukce a ingredience jsou povinné." });
     }
 
-    // Uložení receptu
     const query = 'INSERT INTO recipes (user_id, title, description, image) VALUES (?, ?, ?, ?)';
     connection.query(query, [userId, title, description, image], (err, result) => {
         if (err) {
@@ -83,7 +82,6 @@ app.post('/recipes', (req, res) => {
 
         const recipeId = result.insertId;
 
-        // Uložení instrukcí
         instructions.forEach((instruction, index) => {
             const instructionQuery = 'INSERT INTO recipe_instructions (recipe_id, step_number, instruction) VALUES (?, ?, ?)';
             connection.query(instructionQuery, [recipeId, index + 1, instruction.text], (err) => {
@@ -94,9 +92,7 @@ app.post('/recipes', (req, res) => {
             });
         });
 
-        // Uložení ingrediencí a vztahů mezi receptem a ingrediencemi
         ingredients.forEach((ingredient) => {
-            // Nejprve vložíme ingredienci do tabulky ingredients, pokud už neexistuje
             const ingredientQuery = 'INSERT INTO ingredients (name) VALUES (?) ON DUPLICATE KEY UPDATE name=name';
             connection.query(ingredientQuery, [ingredient.name], (err, result) => {
                 if (err) {
@@ -106,7 +102,6 @@ app.post('/recipes', (req, res) => {
 
                 const ingredientId = result.insertId || result[0].id;
 
-                // Vložení vztahu mezi receptem a ingrediencí
                 const recipeIngredientQuery = 'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount) VALUES (?, ?, ?)';
                 connection.query(recipeIngredientQuery, [recipeId, ingredientId, ingredient.amount], (err) => {
                     if (err) {
@@ -121,7 +116,43 @@ app.post('/recipes', (req, res) => {
     });
 });
 
-//Server
+// Endpoint pro získání uživatelského profilu a jeho receptů
+app.get('/datareceptprofile', (req, res) => {
+    const userId = req.query.userId; // nebo z tokenu, pokud používáte autentifikaci pomocí JWT
+
+    if (!userId) {
+        return res.status(400).json({ error: "ID uživatele je povinné." });
+    }
+
+    const userQuery = 'SELECT id, name, email FROM users WHERE id = ?';
+    connection.query(userQuery, [userId], (err, userResults) => {
+        if (err) {
+            console.error('Chyba při načítání uživatele:', err);
+            return res.status(500).json({ error: "Chyba při načítání uživatele." });
+        }
+
+        if (userResults.length === 0) {
+            return res.status(404).json({ error: "Uživatel nenalezen." });
+        }
+
+        const user = userResults[0];
+
+        const recipesQuery = 'SELECT id, title, created_at FROM recipes WHERE user_id = ?';
+        connection.query(recipesQuery, [userId], (err, recipesResults) => {
+            if (err) {
+                console.error('Chyba při načítání receptů:', err);
+                return res.status(500).json({ error: "Chyba při načítání receptů." });
+            }
+
+            res.status(200).json({
+                user: user,
+                recipes: recipesResults
+            });
+        });
+    });
+});
+
+// Spuštění serveru
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);
 });
