@@ -116,6 +116,37 @@ app.post('/recipes', (req, res) => {
     });
 });
 
+// Endpoint pro odstranění receptu
+app.delete('/deleterecipe/:id', (req, res) => {
+    const recipeId = req.params.id;
+
+    // Mazání závislých dat: každý DELETE se provede samostatně
+    connection.query('DELETE FROM recipe_ingredients WHERE recipe_id = ?', [recipeId], (err) => {
+        if (err) {
+            console.error('Chyba při mazání závislých dat (recipe_ingredients):', err);
+            return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (recipe_ingredients).' });
+        }
+
+        connection.query('DELETE FROM recipe_instructions WHERE recipe_id = ?', [recipeId], (err) => {
+            if (err) {
+                console.error('Chyba při mazání závislých dat (recipe_instructions):', err);
+                return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (recipe_instructions).' });
+            }
+
+            // Mazání samotného receptu
+            connection.query('DELETE FROM recipes WHERE id = ?', [recipeId], (err) => {
+                if (err) {
+                    console.error('Chyba při mazání receptu:', err);
+                    return res.status(500).json({ error: 'Nastala chyba při mazání receptu.' });
+                }
+
+                res.status(200).json({ message: 'Recept byl úspěšně odstraněn.' });
+            });
+        });
+    });
+});
+
+
 // Endpoint pro získání uživatelského profilu a jeho receptů
 app.get('/datareceptprofile', (req, res) => {
     const userId = req.query.userId; // nebo z tokenu, pokud používáte autentifikaci pomocí JWT

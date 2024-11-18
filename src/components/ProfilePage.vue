@@ -11,26 +11,29 @@
       <div v-for="recipe in recipes" :key="recipe.id" class="card mb-3 shadow-sm">
         <div class="card-body">
           <h6 class="card-title">{{ recipe.title }}</h6>
-          <button @click="toggleRecipeDetails(recipe.id)" class="btn btn-info">
+          <button @click="toggleRecipeDetails(recipe.id)" class="btn btn-info me-2">
             {{ expandedRecipe === recipe.id ? 'Skrýt podrobnosti' : 'Zobrazit celý recept' }}
+          </button>
+          <button @click="deleteRecipe(recipe.id)" class="btn btn-danger">
+            Odstranit recept
           </button>
 
           <div v-if="expandedRecipe === recipe.id" class="recipe-details mt-3">
-            <h6 class="text-center">Popis:</h6> <!-- Zarovnáno na střed -->
-            <p class="text-center">{{ recipeDetails.description }}</p> <!-- Zarovnáno na střed -->
+            <h6 class="text-center">Popis:</h6>
+            <p class="text-center">{{ recipeDetails.description }}</p>
 
             <div v-if="recipeDetails.image">
               <img :src="recipeDetails.image" alt="Obrázek receptu" class="img-fluid mb-3" />
             </div>
 
-            <h6 class="text-start">Kroky:</h6> <!-- Zarovnáno vlevo -->
+            <h6 class="text-start">Kroky:</h6>
             <ol class="text-start">
               <li v-for="step in recipeDetails.instructions" :key="step.step_number">
                 {{ step.instruction }}
               </li>
             </ol>
 
-            <h6 class="text-start">Ingredience:</h6> <!-- Zarovnáno vlevo -->
+            <h6 class="text-start">Ingredience:</h6>
             <ul class="text-start">
               <li v-for="ingredient in recipeDetails.ingredients" :key="ingredient.name">
                 {{ ingredient.name }} - {{ ingredient.amount }}
@@ -62,7 +65,7 @@ export default {
     async toggleRecipeDetails(recipeId) {
       if (this.expandedRecipe === recipeId) {
         this.expandedRecipe = null;
-        this.recipeDetails = {};  // Resetuje detailní informace
+        this.recipeDetails = {}; // Resetuje detailní informace
         return;
       }
 
@@ -73,10 +76,28 @@ export default {
         }
 
         this.recipeDetails = await response.json();
-        console.log('Podrobnosti receptu:', this.recipeDetails);  // Pro ověření
+        console.log('Podrobnosti receptu:', this.recipeDetails); // Pro ověření
         this.expandedRecipe = recipeId;
       } catch (error) {
         console.error(error.message);
+      }
+    },
+    async deleteRecipe(recipeId) {
+      if (!confirm("Opravdu chcete odstranit tento recept?")) {
+        return; // Zrušení akce
+      }
+      try {
+        const response = await fetch(`http://localhost:3000/deleterecipe/${recipeId}`, {
+          method: "DELETE",
+        });
+        if (!response.ok) {
+          throw new Error("Nepodařilo se smazat recept.");
+        }
+        this.recipes = this.recipes.filter(recipe => recipe.id !== recipeId); // Aktualizace seznamu receptů
+        alert("Recept byl úspěšně odstraněn.");
+      } catch (error) {
+        console.error(error.message);
+        alert("Nastala chyba při mazání receptu.");
       }
     }
   },
@@ -126,10 +147,10 @@ export default {
 }
 
 .text-start {
-  text-align: left;  /* Zarovnání textu vlevo */
+  text-align: left;
 }
 
 .text-center {
-  text-align: center;  /* Zarovnání textu na střed */
+  text-align: center;
 }
 </style>
