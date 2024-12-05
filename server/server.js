@@ -264,15 +264,83 @@ app.get('/recipe/:recipeId', (req, res) => {
 });
 
 app.get('/random-recipes', (req, res) => {
-    // Dotaz na 5 náhodných receptů
-    connection.query('SELECT * FROM recipes ORDER BY RAND() LIMIT 5', (err, results) => {
-      if (err) {
-        console.error('Chyba při načítání receptů: ', err);
-        return res.status(500).json({ error: 'Chyba při načítání receptů.' });
-      }
-      res.json(results);  // Vrátí 5 náhodných receptů
+    // Dotaz na všechny recepty a jejich ingredience
+    const query = `
+        SELECT recipes.*, GROUP_CONCAT(ingredients.name) AS ingredients
+        FROM recipes
+        LEFT JOIN recipe_ingredients ON recipes.id = recipe_ingredients.recipe_id
+        LEFT JOIN ingredients ON recipe_ingredients.ingredient_id = ingredients.id
+        GROUP BY recipes.id
+        ORDER BY RAND()
+    `;
+    
+    connection.query(query, (err, results) => {
+        if (err) {
+            console.error('Chyba při načítání receptů: ', err);
+            return res.status(500).json({ error: 'Chyba při načítání receptů.' });
+        }
+        res.json(results);  // Vrátí všechny recepty v náhodném pořadí, včetně ingrediencí
     });
-  });
+});
+
+
+
+app.get('/filter-recipes', (req, res) => {
+    const { ingredients, title } = req.query;
+    console.log('Received ingredients:', ingredients);  // Log pro kontrolu
+    console.log('Received title:', title);  // Log pro kontrolu
+
+    let query = `
+        SELECT DISTINCT r.id, r.title, r.description, GROUP_CONCAT(i.name) AS ingredients
+        FROM recipes r
+        LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+        LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+    `;
+    const queryParams = [];
+    const conditions = [];
+
+    if (title) {
+        conditions.push(`r.title LIKE ?`);
+        queryParams.push(`%${title}%`);
+    }
+
+    if (ingredients) {
+        const ingredientList = ingredients.split(',').map(ing => ing.trim());
+        const placeholders = ingredientList.map(() => '?').join(', ');
+
+        conditions.push(`i.name IN (${placeholders})`);
+        queryParams.push(...ingredientList);
+    }
+
+    if (conditions.length > 0) {
+        query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    if (ingredients) {
+        const ingredientCount = ingredients.split(',').length;
+        query += `
+            GROUP BY r.id
+            HAVING COUNT(DISTINCT i.id) = ?  -- Počet ingrediencí se musí přesně shodovat
+        `;
+        queryParams.push(ingredientCount);
+    }
+
+    query += ' GROUP BY r.id'; // Přidání GROUP BY pro správné agregování ingrediencí
+
+    connection.query(query, queryParams, (err, results) => {
+        if (err) {
+            console.error('Error retrieving recipes:', err);
+            return res.status(500).json({ error: 'Error retrieving recipes.' });
+        }
+
+        res.json(results); // Vrací recepty s ingrediencemi
+    });
+});
+
+
+
+
+
 // Spuštění serveru
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);

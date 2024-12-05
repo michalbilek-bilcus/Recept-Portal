@@ -1,36 +1,57 @@
 <template>
   <div class="container mt-5">
-    <h2>Vítejte na receptech!</h2>
-    <p>Zde najdete recepty.</p>
+    <!-- Vyhledávací pole -->
+    <div class="search-bar">
+      <div class="input-group mb-3">
+        <input
+          type="text"
+          v-model="searchIngredients"
+          class="form-control"
+          placeholder="Zadejte ingredience oddělené čárkou"
+        />
+        <input
+          type="text"
+          v-model="searchTitle"
+          class="form-control"
+          placeholder="Zadejte název receptu"
+        />
+        <button @click="filterRecipes" class="btn btn-primary">Hledat recepty</button>
+        <button @click="loadRandomRecipes" class="btn btn-secondary">Zobrazit všechny recepty</button>
+      </div>
+    </div>
+    
+    <!-- Zpráva o chybě -->
+    <div v-if="errorMessage" class="text-center text-danger">{{ errorMessage }}</div>
 
-    <div v-if="loading">Načítám recepty...</div>
-    <div v-if="errorMessage" class="text-danger">{{ errorMessage }}</div>
+    <!-- Recepty -->
+    <div v-if="filteredRecipes.length === 0 && !loading && !errorMessage" class="text-center">
+      <p>Žádné recepty nevyhovují vašemu hledání.</p>
+    </div>
 
-    <div v-for="recipe in recipes" :key="recipe.id" class="recipe-card card mb-4">
-      <div class="card-body">
-        <h5 class="card-title">{{ recipe.title }}</h5>
-        <button @click="toggleRecipeDetails(recipe.id)" class="btn btn-primary">
-          {{ expandedRecipe === recipe.id ? 'Skrýt podrobnosti' : 'Zobrazit celý recept' }}
-        </button>
-
-        <div v-if="expandedRecipe === recipe.id" class="recipe-details mt-3">
-          <h6>Popis:</h6>
-          <p>{{ recipe.description }}</p>
-          <img v-if="recipe.image" :src="recipe.image" alt="Obrázek receptu" class="recipe-image img-fluid" />
-          
-          <h6 class="mt-3">Kroky:</h6>
-          <ol>
-            <li v-for="step in recipe.instructions" :key="step.step_number">
-              {{ step.instruction }}
-            </li>
-          </ol>
-
-          <h6 class="mt-3">Ingredience:</h6>
-          <ul>
-            <li v-for="ingredient in recipe.ingredients" :key="ingredient.name">
-              {{ ingredient.name }} - {{ ingredient.amount }}
-            </li>
-          </ul>
+    <div class="row">
+      <div
+        v-for="recipe in filteredRecipes"
+        :key="recipe.id"
+        class="col-md-4 mb-4"
+      >
+        <div
+          class="card recipe-card"
+          @click="navigateToRecipe(recipe.id)"
+        >
+          <div
+            class="recipe-image card-img-top"
+            :style="{ backgroundImage: `url(${recipe.image})` }"
+          >
+            <div class="recipe-title">{{ recipe.title }}</div>
+          </div>
+          <div class="card-body">
+            <!-- Ingredience receptu -->
+            <ul class="list-unstyled recipe-ingredients">
+              <li v-for="ingredient in (recipe.ingredients ? recipe.ingredients.split(',') : [])" :key="ingredient">
+                {{ ingredient.trim() }}
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -41,53 +62,94 @@
 export default {
   data() {
     return {
-      recipes: [],
-      expandedRecipe: null,
-      loading: true,
-      errorMessage: ''
+      recipes: [], // Pole všech receptů
+      filteredRecipes: [], // Filtrované recepty
+      searchIngredients: '',
+      searchTitle: '', // Vyhledávání podle názvu receptu
+      loading: false,
+      errorMessage: '',
     };
   },
   methods: {
-    async toggleRecipeDetails(recipeId) {
-      // Pokud je recept již rozkliknutý, skrytí jeho podrobností
-      if (this.expandedRecipe === recipeId) {
-        this.expandedRecipe = null;
+    navigateToRecipe(recipeId) {
+      // Přesměrování na stránku detailů receptu
+      this.$router.push({ name: "receptdetails", params: { id: recipeId } });
+    },
+    async filterRecipes() {
+      const ingredients = this.searchIngredients.split(',').map((ing) => ing.trim()).filter(Boolean);
+      const title = this.searchTitle.trim().toLowerCase();
+
+      this.loading = true;
+      this.errorMessage = ''; // Resetování chybové zprávy
+
+      if (ingredients.length === 0 && title === '') {
+        this.errorMessage = 'Zadejte alespoň jednu ingredienci nebo název receptu.';
+        this.loading = false;
         return;
       }
 
-      // Načítání detailů receptu z API
       try {
-        const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
+        const response = await fetch(
+          `http://localhost:3000/filter-recipes?ingredients=${ingredients.join(',')}&title=${title}`
+        );
+        
         if (!response.ok) {
-          throw new Error('Nepodařilo se načíst detaily receptu.');
+          throw new Error('Chyba při filtrování receptů.');
         }
-        const recipeDetails = await response.json();
 
-        // Přidání detailů k receptu
-        const recipe = this.recipes.find(r => r.id === recipeId);
-        recipe.description = recipeDetails.description;
-        recipe.instructions = recipeDetails.instructions;
-        recipe.ingredients = recipeDetails.ingredients;
+        const data = await response.json();
+        console.log(data); // Debugging: vypíše data pro kontrolu
 
-        this.expandedRecipe = recipeId;  // Zobrazení podrobností
+        // Pokud server vrátí prázdný seznam, nastavíme chybovou zprávu
+        if (data.length === 0) {
+          this.errorMessage = `Žádný recept s názvem "${title}" nebo požadovanými ingrediencemi nebyl nalezen.`;
+        } else {
+          this.filteredRecipes = data;
+        }
       } catch (error) {
         this.errorMessage = error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+    async loadRandomRecipes() {
+      this.loading = true;
+      this.errorMessage = ''; // Resetování chybové zprávy
+
+      try {
+        const response = await fetch('http://localhost:3000/random-recipes');
+        if (!response.ok) {
+          throw new Error('Chyba při načítání receptů.');
+        }
+        const data = await response.json();
+
+        this.filteredRecipes = data; // Zobrazí všechny recepty
+      } catch (error) {
+        this.errorMessage = error.message;
+      } finally {
+        this.loading = false;
       }
     }
   },
   async mounted() {
+    this.loading = true;
+
     try {
       const response = await fetch('http://localhost:3000/random-recipes');
       if (!response.ok) {
         throw new Error('Chyba při načítání receptů.');
       }
-      this.recipes = await response.json();
-      this.loading = false;
+      const data = await response.json();
+      console.log(data); // Debugging: vypíše data pro kontrolu
+
+      this.recipes = data;
+      this.filteredRecipes = this.recipes; // Zobrazí všechny recepty
     } catch (error) {
       this.errorMessage = error.message;
+    } finally {
       this.loading = false;
     }
-  }
+  },
 };
 </script>
 
@@ -96,32 +158,72 @@ export default {
   text-align: center;
 }
 
-.recipe-card {
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 15px;
-}
-
-.recipe-details {
-  text-align: left;
-  margin-top: 15px;
-}
-
 .recipe-image {
   width: 100%;
-  max-width: 300px;
-  margin-bottom: 15px;
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 10px 10px 0 0;
 }
 
-h6 {
-  margin-top: 10px;
+.recipe-card {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  height: auto;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease; /* Přidání plynulého efektu pro pohyb */
 }
 
-.card-title {
-  font-weight: bold;
+.recipe-card:hover {
+  transform: scale(1.05); /* Při hoveru karta mírně zvětší */
 }
 
-button {
-  margin-top: 10px;
+.recipe-title {
+  width: 100%;
+  text-align: center;
+  font-size: 1.2em;
+  color: white;
+  padding: 10px 0;
+  background: rgba(0, 0, 0, 0.5);
+  transition: color 0.3s ease; /* Plynulý přechod pro změnu barvy */
+}
+
+.recipe-card:hover .recipe-title {
+  color: orange; /* Oranžová barva při hoveru */
+}
+
+.recipe-ingredients {
+  list-style: none;
+  padding: 0;
+  font-size: 0.9em;
+  text-align: left;
+}
+
+.recipe-ingredients li {
+  margin: 0;
+  padding: 0;
+}
+
+.search-bar {
+  margin-bottom: 20px;
+}
+
+.search-bar input,
+.search-bar button {
+  margin-bottom: 10px;
+}
+
+.search-bar input {
+  max-width: 400px;
+}
+
+.text-danger {
+  padding-bottom: 20px;
 }
 </style>
