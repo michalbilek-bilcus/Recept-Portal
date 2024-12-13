@@ -38,29 +38,34 @@
       </div>
 
       <div v-if="currentStep === 3">
-        <!-- Div 3: Ingredience -->
-        <div>
-          <label class="form-label">Ingredience:</label>
-          <div v-for="(ingredient, index) in ingredients" :key="index" class="input-group mb-2">
-            <input
-              type="text"
-              v-model="ingredient.name"
-              placeholder="Název ingredience"
-              class="form-control"
-              required
-            />
-            <input
-              type="text"
-              v-model="ingredient.amount"
-              placeholder="Množství"
-              class="form-control"
-            />
-            <button @click="removeIngredient(index)" type="button" class="btn btn-danger">Odstranit</button>
-          </div>
-          <p v-if="errors.ingredients" class="text-danger">Každá ingredience musí mít název a množství.</p>
-          <button @click="addIngredient" type="button" class="btn btn-secondary mt-2">Přidat ingredienci</button>
-        </div>
-      </div>
+  <!-- Div 3: Ingredience -->
+  <div>
+    <label class="form-label">Ingredience:</label>
+
+    <!-- Dropdown pro každou ingredienci -->
+    <div v-for="(ingredient, index) in ingredients" :key="index" class="input-group mb-2">
+      <select v-model="ingredient.name" class="form-control" required>
+        <option value="">Vyberte ingredienci</option>
+        <option v-for="ingredientOption in allIngredients" :key="ingredientOption" :value="ingredientOption">
+          {{ ingredientOption }}
+        </option>
+      </select>
+      
+      <input
+        type="text"
+        v-model="ingredient.amount"
+        placeholder="Množství"
+        class="form-control"
+      />
+      <button @click="removeIngredient(index)" type="button" class="btn btn-danger">Odstranit</button>
+    </div>
+
+    <p v-if="errors.ingredients" class="text-danger">Každá ingredience musí mít název a množství.</p>
+
+    <button @click="addIngredient" type="button" class="btn btn-secondary mt-2">Přidat ingredienci</button>
+  </div>
+</div>
+
 
       <div v-if="currentStep === 4">
         <!-- Div 4: Obrázek -->
@@ -197,7 +202,35 @@ export default {
     goHome() {
       this.$router.push('/homepage');
     }
-  }
+  }, 
+  async mounted() {
+    this.loading = true;
+
+    try {
+      // Získání všech ingrediencí z backendu
+      const ingredientsResponse = await fetch('http://localhost:3000/ingredients');
+      if (!ingredientsResponse.ok) {
+        throw new Error('Chyba při načítání ingrediencí.');
+      }
+      const ingredientsData = await ingredientsResponse.json();
+      this.allIngredients = ingredientsData.map(item => item.name); // Uložení názvů ingrediencí do pole
+
+      // Získání všech receptů
+      const response = await fetch('http://localhost:3000/random-recipes');
+      if (!response.ok) {
+        throw new Error('Chyba při načítání receptů.');
+      }
+      const data = await response.json();
+      console.log(data); // Debugging: vypíše data pro kontrolu
+
+      this.recipes = data;
+      this.filteredRecipes = this.recipes; // Zobrazí všechny recepty
+    } catch (error) {
+      this.errorMessage = error.message;
+    } finally {
+      this.loading = false;
+    }
+  },
 };
 </script>
 
