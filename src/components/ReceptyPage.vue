@@ -97,7 +97,7 @@ export default {
         );
         
         if (!response.ok) {
-          throw new Error('Chyba při filtrování receptů.');
+          throw new Error('nebyl nalezen recept s danou ingrediencí.');
         }
 
         const data = await response.json();

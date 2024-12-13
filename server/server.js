@@ -326,6 +326,10 @@ app.get('/filter-recipes', (req, res) => {
         return res.status(500).send('Chyba serveru');
       }
 
+      if (results.length === 0) {
+        return res.status(404).json({ error: "Žádný recept s těmito kritérii nebyl nalezen." });
+      }
+
       // 2. dotaz pro ingredience pro všechny recepty
       const recipeIds = results.map(recipe => recipe.id);
       const ingredientsQuery = `
@@ -360,6 +364,7 @@ app.get('/filter-recipes', (req, res) => {
     });
 });
 
+
 app.get('/ingredients', (req, res) => {
     connection.query('SELECT name FROM ingredients', (err, results) => {
       if (err) {
@@ -369,7 +374,7 @@ app.get('/ingredients', (req, res) => {
       res.json(results); // Vrátí seznam ingrediencí
     });
   });
-  
+
 // Spuštění serveru
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);
