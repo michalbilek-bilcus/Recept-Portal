@@ -287,60 +287,89 @@ app.get('/random-recipes', (req, res) => {
 
 app.get('/filter-recipes', (req, res) => {
     const { ingredients, title } = req.query;
-    console.log('Received ingredients:', ingredients);  // Log pro kontrolu
-    console.log('Received title:', title);  // Log pro kontrolu
 
-    let query = `
-        SELECT DISTINCT r.id, r.title, r.description, GROUP_CONCAT(i.name) AS ingredients
-        FROM recipes r
-        LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-        LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+    // 1. dotaz na recepty podle filtrů
+    let sqlQuery = `
+      SELECT r.id, r.title, r.description, r.image
+      FROM recipes r
+      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
     `;
-    const queryParams = [];
+    
     const conditions = [];
+    const queryParams = [];
 
-    if (title) {
-        conditions.push(`r.title LIKE ?`);
-        queryParams.push(`%${title}%`);
+    // Filtr podle ingrediencí, pokud je zadaný
+    if (ingredients && ingredients.trim() !== '') {
+      conditions.push("i.name IN (?)");
+      queryParams.push(ingredients.split(',').map(ing => ing.trim())); // Seznam ingrediencí
     }
 
-    if (ingredients) {
-        const ingredientList = ingredients.split(',').map(ing => ing.trim());
-        const placeholders = ingredientList.map(() => '?').join(', ');
-
-        conditions.push(`i.name IN (${placeholders})`);
-        queryParams.push(...ingredientList);
+    // Filtr podle názvu receptu, pokud je zadaný
+    if (title && title.trim() !== '') {
+      conditions.push("r.title LIKE ?");
+      queryParams.push(`%${title}%`);
     }
 
+    // Přidání podmínek pro filtraci, pokud existují
     if (conditions.length > 0) {
-        query += ` WHERE ${conditions.join(' AND ')}`;
+      sqlQuery += " WHERE " + conditions.join(" AND ");
     }
 
-    if (ingredients) {
-        const ingredientCount = ingredients.split(',').length;
-        query += `
-            GROUP BY r.id
-            HAVING COUNT(DISTINCT i.id) = ?  -- Počet ingrediencí se musí přesně shodovat
-        `;
-        queryParams.push(ingredientCount);
-    }
+    // Přidání GROUP BY pro zajištění, že každý recept bude vypsán jen jednou
+    sqlQuery += " GROUP BY r.id";
 
-    query += ' GROUP BY r.id'; // Přidání GROUP BY pro správné agregování ingrediencí
+    // Spuštění dotazu pro vyhledání receptů
+    connection.query(sqlQuery, queryParams, (err, results) => {
+      if (err) {
+        console.error('Chyba při dotazu na databázi:', err);
+        return res.status(500).send('Chyba serveru');
+      }
 
-    connection.query(query, queryParams, (err, results) => {
+      // 2. dotaz pro ingredience pro všechny recepty
+      const recipeIds = results.map(recipe => recipe.id);
+      const ingredientsQuery = `
+        SELECT ri.recipe_id, i.name
+        FROM ingredients i
+        JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
+        WHERE ri.recipe_id IN (?)
+      `;
+
+      connection.query(ingredientsQuery, [recipeIds], (err, ingredientsResults) => {
         if (err) {
-            console.error('Error retrieving recipes:', err);
-            return res.status(500).json({ error: 'Error retrieving recipes.' });
+          console.error('Chyba při dotazu na ingredience:', err);
+          return res.status(500).send('Chyba serveru');
         }
 
-        res.json(results); // Vrací recepty s ingrediencemi
+        // Sestavení receptů s ingrediencemi, každý recept se objeví pouze jednou
+        const recipesWithIngredients = results.map(recipe => {
+          // Filtrace ingrediencí pro konkrétní recept a spojení do jednoho řetězce
+          const recipeIngredients = ingredientsResults
+            .filter(ingredient => ingredient.recipe_id === recipe.id)
+            .map(ingredient => ingredient.name)
+            .join(', ');
+
+          return {
+            ...recipe,
+            ingredients: recipeIngredients
+          };
+        });
+
+        res.json(recipesWithIngredients); // Vrátí recepty s ingrediencemi
+      });
     });
 });
 
-
-
-
-
+app.get('/ingredients', (req, res) => {
+    connection.query('SELECT name FROM ingredients', (err, results) => {
+      if (err) {
+        console.error('Error fetching ingredients:', err);
+        return res.status(500).json({ error: 'Error fetching ingredients.' });
+      }
+      res.json(results); // Vrátí seznam ingrediencí
+    });
+  });
+  
 // Spuštění serveru
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);

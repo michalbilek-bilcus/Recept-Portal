@@ -1,0 +1,137 @@
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE recipes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  instructions TEXT,
+  image VARCHAR(255),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE ingredients (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE recipe_ingredients (
+  recipe_id INT NOT NULL,
+  ingredient_id INT NOT NULL,
+  amount VARCHAR(255),
+  PRIMARY KEY (recipe_id, ingredient_id),
+  FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+  FOREIGN KEY (ingredient_id) REFERENCES ingredients(id)
+);
+
+CREATE TABLE comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  recipe_id INT NOT NULL,
+  user_id INT NOT NULL,
+  comment TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE ratings (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  recipe_id INT NOT NULL,
+  user_id INT NOT NULL,
+  rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (recipe_id) REFERENCES recipes(id),
+  FOREIGN KEY (user_id) REFERENCES users(id) CREATE TABLE recipe_instructions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  recipe_id INT NOT NULL,
+  step_number INT NOT NULL,
+  instruction TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (recipe_id) REFERENCES recipes(id)
+);
+
+CREATE TABLE categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE meal_types (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL UNIQUE,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE recipes
+ADD COLUMN category_id INT,
+ADD COLUMN meal_type_id INT,
+ADD FOREIGN KEY (category_id) REFERENCES categories(id),
+ADD FOREIGN KEY (meal_type_id) REFERENCES meal_types(id);
+
+-- Vložení kategorií jídel
+INSERT INTO categories (name) VALUES
+('Mexické'),
+('Thajské'),
+('Italské'),
+('České');
+
+-- Vložení typů jídel
+INSERT INTO meal_types (name) VALUES
+('Snídaně'),
+('Oběd'),
+('Večeře'),
+('Dezert');
+
+INSERT INTO ingredients (name) VALUES
+('Sůl'),
+('Cukr'),
+('Pepř'),
+('Olivový olej'),
+('Máslo'),
+('Cibule'),
+('Česnek'),
+('Mouka'),
+('Vejce'),
+('Mléko'),
+('Voda'),
+('Citronová šťáva'),
+('Rajčata'),
+('Mrkev'),
+('Brambory'),
+('Rýže'),
+('Těstoviny'),
+('Kuřecí maso'),
+('Hovězí maso'),
+('Vepřové maso'),
+('Ryby'),
+('Kvasnice'),
+('Sójová omáčka'),
+('Med'),
+('Koriandr'),
+('Bazalka'),
+('Petrželka'),
+('Špenát'),
+('Paprika'),
+('Sýr'),
+('Jogurt'),
+('Ocet'),
+('Chléb'),
+('Čokoláda'),
+('Vanilka'),
+('Chilli prášek'),
+('Oregano'),
+('Rozmarýn'),
+('Tymián'),
+('Kurkuma'),
+('Zázvor'),
+('Sezamová semínka'),
+('Mandlová mouka'),
+('Cizrnová mouka');

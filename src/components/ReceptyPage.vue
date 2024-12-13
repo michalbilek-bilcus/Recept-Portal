@@ -3,12 +3,13 @@
     <!-- Vyhledávací pole -->
     <div class="search-bar">
       <div class="input-group mb-3">
-        <input
-          type="text"
-          v-model="searchIngredients"
-          class="form-control"
-          placeholder="Zadejte ingredience oddělené čárkou"
-        />
+        <!-- Dropdown pro ingredience -->
+        <select v-model="searchIngredients" class="form-control">
+          <option value="">Vyberte ingredienci</option>
+          <option v-for="ingredient in allIngredients" :key="ingredient" :value="ingredient">
+            {{ ingredient }}
+          </option>
+        </select>
         <input
           type="text"
           v-model="searchTitle"
@@ -19,7 +20,7 @@
         <button @click="loadRandomRecipes" class="btn btn-secondary">Zobrazit všechny recepty</button>
       </div>
     </div>
-    
+
     <!-- Zpráva o chybě -->
     <div v-if="errorMessage" class="text-center text-danger">{{ errorMessage }}</div>
 
@@ -30,8 +31,8 @@
 
     <div class="row">
       <div
-        v-for="recipe in filteredRecipes"
-        :key="recipe.id"
+        v-for="(recipe, index) in filteredRecipes"
+        :key="`${recipe.id}-${index}`"
         class="col-md-4 mb-4"
       >
         <div
@@ -47,7 +48,8 @@
           <div class="card-body">
             <!-- Ingredience receptu -->
             <ul class="list-unstyled recipe-ingredients">
-              <li v-for="ingredient in (recipe.ingredients ? recipe.ingredients.split(',') : [])" :key="ingredient">
+              <li v-for="(ingredient, index) in (recipe.ingredients ? recipe.ingredients.split(',') : [])" 
+                  :key="`${ingredient.trim()}-${index}`">  <!-- Unikátní key pro každou ingredienci -->
                 {{ ingredient.trim() }}
               </li>
             </ul>
@@ -64,10 +66,11 @@ export default {
     return {
       recipes: [], // Pole všech receptů
       filteredRecipes: [], // Filtrované recepty
-      searchIngredients: '',
-      searchTitle: '', // Vyhledávání podle názvu receptu
+      searchIngredients: '', // Zadané ingredience
+      searchTitle: '', // Zadaný název receptu
       loading: false,
       errorMessage: '',
+      allIngredients: [] // Ingredience z databáze
     };
   },
   methods: {
@@ -135,6 +138,15 @@ export default {
     this.loading = true;
 
     try {
+      // Získání všech ingrediencí z backendu
+      const ingredientsResponse = await fetch('http://localhost:3000/ingredients');
+      if (!ingredientsResponse.ok) {
+        throw new Error('Chyba při načítání ingrediencí.');
+      }
+      const ingredientsData = await ingredientsResponse.json();
+      this.allIngredients = ingredientsData.map(item => item.name); // Uložení názvů ingrediencí do pole
+
+      // Získání všech receptů
       const response = await fetch('http://localhost:3000/random-recipes');
       if (!response.ok) {
         throw new Error('Chyba při načítání receptů.');
