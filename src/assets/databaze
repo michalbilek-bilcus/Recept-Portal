@@ -103,3 +103,54 @@ INSERT INTO ingredients (name) VALUES
 ('Sezamová semínka'),
 ('Mandlová mouka'),
 ('Cizrnová mouka');
+
+-- Tabulka mealtypes (typy jídel)
+CREATE TABLE mealtypes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabulka categories (kategorie jídel)
+CREATE TABLE categories (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Vazební tabulka recipe_mealtypes (recepty a jejich typy jídel)
+CREATE TABLE recipe_mealtypes (
+  recipe_id INT NOT NULL,
+  mealtype_id INT NOT NULL,
+  PRIMARY KEY (recipe_id, mealtype_id),
+  FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
+  FOREIGN KEY (mealtype_id) REFERENCES mealtypes(id) ON DELETE CASCADE
+);
+
+-- Vazební tabulka recipe_categories (recepty a jejich kategorie)
+CREATE TABLE recipe_categories (
+  recipe_id INT NOT NULL,
+  category_id INT NOT NULL,
+  PRIMARY KEY (recipe_id, category_id),
+  FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE,
+  FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+-- Příklad vložení dat do tabulky mealtypes
+INSERT INTO mealtypes (name) VALUES
+('Snídaně'),
+('Oběd'),
+('Večeře'),
+('Svačina'),
+('Dezert');
+
+-- Příklad vložení dat do tabulky categories
+INSERT INTO categories (name) VALUES
+('Vegetariánské'),
+('Veganské'),
+('Bezlepkové'),
+('Rychlé'),
+('Sladké'),
+('Slané'),
+('Zdravé'),
+('Tradiční');

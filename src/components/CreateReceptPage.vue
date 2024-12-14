@@ -66,9 +66,34 @@
   </div>
 </div>
 
+<div v-if="currentStep === 4">
+  <!-- Dropdown pro typy jídel (mealtypes) -->
+  <div class="mb-3">
+    <label class="form-label">Typ jídla:</label>
+    <select v-model="selectedMealType" class="form-control" required>
+      <option value="">Vyberte typ jídla</option>
+      <option v-for="mealtypeOption in allMealtypes" :key="mealtypeOption" :value="mealtypeOption">
+        {{ mealtypeOption }}
+      </option>
+    </select>
+  </div>
 
-      <div v-if="currentStep === 4">
-        <!-- Div 4: Obrázek -->
+        <!-- Dropdown pro kategorie (categories) -->
+      <div class="mb-3">
+        <label class="form-label">Kategorie:</label>
+          <select v-model="selectedCategory" class="form-control" required>
+            <option value="">Vyberte kategorii</option>
+            <option v-for="categoryOption in allCategories" :key="categoryOption" :value="categoryOption">
+              {{ categoryOption }}
+            </option>
+          </select>
+          <!-- Zobrazení chyby pro mealtype -->
+          <p v-if="errors.mealtypes" class="text-danger">Musíte vybrat typ jídla a kategorii</p>
+        </div>
+      </div>
+
+      <div v-if="currentStep === 5">
+        <!-- Div 5: Obrázek -->
         <div>
           <div class="mb-3">
             <label for="image" class="form-label">Obrázek:</label>
@@ -84,7 +109,7 @@
       <!-- Navigační tlačítka -->
       <div class="d-flex justify-content-between mt-4">
         <button @click="prevStep" class="btn btn-secondary" :disabled="currentStep === 1">Zpět</button>
-        <button @click="nextStep" class="btn btn-primary" :disabled="currentStep === 4">Další</button>
+        <button @click="nextStep" class="btn btn-primary" :disabled="currentStep === 5">Další</button>
       </div>
 
       <button @click="goHome" class="btn btn-link w-100 mt-3">Domů</button>
@@ -101,10 +126,15 @@ export default {
       recipe: {
         title: '',
         description: '',
-        image: ''
+        image: '',
+
       },
       instructions: [{ text: '' }],
       ingredients: [{ name: '', amount: '' }],
+      selectedMealType: '',
+      selectedCategory: '',
+      allMealtypes: [],
+      allCategories: [],
       errorMessage: '',
       errors: {
         title: false,
@@ -115,18 +145,20 @@ export default {
   },
   methods: {
     validateForm() {
-      // Validace jednotlivých částí
-      this.errors.title = !this.recipe.title.trim();
-      this.errors.instructions = this.instructions.some(
-        (instruction) => !instruction.text.trim()
-      );
-      this.errors.ingredients = this.ingredients.some(
-        (ingredient) => !ingredient.name.trim()
-      );
+    // Validace jednotlivých částí
+    this.errors.title = !this.recipe.title.trim();
+    this.errors.instructions = this.instructions.some(
+      (instruction) => !instruction.text.trim()
+    );
+    this.errors.ingredients = this.ingredients.some(
+      (ingredient) => !ingredient.name.trim()
+    );
+    this.errors.mealtypes = !this.selectedMealType; // Validace pro mealtype
+    this.errors.categories = !this.selectedCategory; // Validace pro category
 
-      // Pokud některá část není validní, vrátíme false
-      return !this.errors.title && !this.errors.instructions && !this.errors.ingredients;
-    },
+    // Pokud některá část není validní, vrátíme false
+    return !this.errors.title && !this.errors.instructions && !this.errors.ingredients && !this.errors.mealtypes && !this.errors.categories;
+  },
     nextStep() {
       this.errorMessage = ''; // Vyčistíme chyby
       this.currentStep++;
@@ -148,89 +180,109 @@ export default {
       this.ingredients.splice(index, 1);
     },
     async submitRecipe() {
-      // Spustíme validaci formuláře
-      if (!this.validateForm()) {
-        this.errorMessage = 'Vyplňte prosím všechna povinná pole.';
-        return;
-      }
+  // Spustíme validaci formuláře
+  if (!this.validateForm()) {
+    this.errorMessage = 'Vyplňte prosím všechna povinná pole.';
+    return;
+  }
 
-      try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user) {
-          this.errorMessage = "Musíte být přihlášeni, abyste mohli přidat recept.";
-          return;
-        }
-
-        const recipeData = {
-          userId: user.id,
-          ...this.recipe,
-          instructions: this.instructions.map((instruction, index) => ({
-            step_number: index + 1,
-            text: instruction.text
-          })),
-          ingredients: this.ingredients.map(ingredient => ({
-            name: ingredient.name,
-            amount: ingredient.amount
-          }))
-        };
-
-        const response = await fetch('http://localhost:3000/recipes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(recipeData)
-        });
-
-        if (!response.ok) {
-          throw new Error(`Chyba ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('Recept byl úspěšně vytvořen:', data);
-
-        // Reset formuláře
-        this.recipe = { title: '', description: '', image: '' };
-        this.ingredients = [{ name: '', amount: '' }];
-        this.instructions = [{ text: '' }];
-        alert('Recept byl úspěšně vytvořen!');
-
-        this.$router.push('/homepage');
-      } catch (error) {
-        console.error('Chyba při odesílání receptu:', error);
-        this.errorMessage = error.message;
-      }
-    },
-    goHome() {
-      this.$router.push('/homepage');
+  try {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      this.errorMessage = "Musíte být přihlášeni, abyste mohli přidat recept.";
+      return;
     }
+
+    const recipeData = {
+      userId: user.id,
+      ...this.recipe,
+      instructions: this.instructions.map((instruction, index) => ({
+        step_number: index + 1,
+        text: instruction.text
+      })),
+      ingredients: this.ingredients.map(ingredient => ({
+        name: ingredient.name,
+        amount: ingredient.amount
+      })),
+      mealtypes: this.selectedMealtypes.map(mealtype => mealtype.id), // Přidání vybraných typů jídel
+      categories: this.selectedCategories.map(category => category.id) // Přidání vybraných kategorií
+    };
+
+    const response = await fetch('http://localhost:3000/recipes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(recipeData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Chyba ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('Recept byl úspěšně vytvořen:', data);
+
+    // Reset formuláře
+    this.recipe = { title: '', description: '', image: '' };
+    this.ingredients = [{ name: '', amount: '' }];
+    this.instructions = [{ text: '' }];
+    this.selectedMealtypes = []; // Reset výběru typů jídel
+    this.selectedCategories = []; // Reset výběru kategorií
+    alert('Recept byl úspěšně vytvořen!');
+
+    this.$router.push('/homepage');
+  } catch (error) {
+    console.error('Chyba při odesílání receptu:', error);
+    this.errorMessage = error.message;
+  }
+},
+goHome() {
+  this.$router.push('/homepage');
+}
+
   }, 
   async mounted() {
-    this.loading = true;
-
-    try {
-      // Získání všech ingrediencí z backendu
-      const ingredientsResponse = await fetch('http://localhost:3000/ingredients');
-      if (!ingredientsResponse.ok) {
-        throw new Error('Chyba při načítání ingrediencí.');
-      }
-      const ingredientsData = await ingredientsResponse.json();
-      this.allIngredients = ingredientsData.map(item => item.name); // Uložení názvů ingrediencí do pole
-
-      // Získání všech receptů
-      const response = await fetch('http://localhost:3000/random-recipes');
-      if (!response.ok) {
-        throw new Error('Chyba při načítání receptů.');
-      }
-      const data = await response.json();
-      console.log(data); // Debugging: vypíše data pro kontrolu
-
-      this.recipes = data;
-      this.filteredRecipes = this.recipes; // Zobrazí všechny recepty
-    } catch (error) {
-      this.errorMessage = error.message;
-    } finally {
-      this.loading = false;
+  this.loading = true;
+  try {
+    // Načtení všech typů jídel (mealtypes)
+    const mealtypesResponse = await fetch('http://localhost:3000/mealtypes');
+    if (!mealtypesResponse.ok) {
+      throw new Error('Chyba při načítání typů jídel.');
     }
-  },
+    const mealtypesData = await mealtypesResponse.json();
+    this.allMealtypes = mealtypesData.map(item => item.name); // Uložení názvů typů jídel do pole
+
+    // Načtení všech kategorií (categories)
+    const categoriesResponse = await fetch('http://localhost:3000/categories');
+    if (!categoriesResponse.ok) {
+      throw new Error('Chyba při načítání kategorií.');
+    }
+    const categoriesData = await categoriesResponse.json();
+    this.allCategories = categoriesData.map(item => item.name); // Uložení názvů kategorií do pole
+
+    // Načtení všech ingrediencí
+    const ingredientsResponse = await fetch('http://localhost:3000/ingredients');
+    if (!ingredientsResponse.ok) {
+      throw new Error('Chyba při načítání ingrediencí.');
+    }
+    const ingredientsData = await ingredientsResponse.json();
+    this.allIngredients = ingredientsData.map(item => item.name); // Uložení názvů ingrediencí do pole
+
+    // Načtení všech receptů
+    const recipesResponse = await fetch('http://localhost:3000/random-recipes');
+    if (!recipesResponse.ok) {
+      throw new Error('Chyba při načítání receptů.');
+    }
+    const recipesData = await recipesResponse.json();
+    console.log(recipesData); // Debugging: vypíše data pro kontrolu
+
+    this.recipes = recipesData;
+    this.filteredRecipes = this.recipes; // Zobrazí všechny recepty
+  } catch (error) {
+    this.errorMessage = error.message;
+  } finally {
+    this.loading = false;
+  }
+},
 };
 </script>
 

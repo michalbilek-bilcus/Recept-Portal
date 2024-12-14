@@ -67,12 +67,14 @@ app.post('/prihlaseni', (req, res) => {
 
 // Endpoint pro přidání receptu
 app.post('/recipes', (req, res) => {
-    const { userId, title, description, image, instructions, ingredients } = req.body;
+    const { userId, title, description, image, instructions, ingredients, mealtypes, categories } = req.body;
 
+    // Validace povinných polí
     if (!title || !userId || instructions.length === 0 || ingredients.length === 0) {
         return res.status(400).json({ error: "Název, instrukce a ingredience jsou povinné." });
     }
 
+    // Uložení receptu
     const query = 'INSERT INTO recipes (user_id, title, description, image) VALUES (?, ?, ?, ?)';
     connection.query(query, [userId, title, description, image], (err, result) => {
         if (err) {
@@ -82,6 +84,7 @@ app.post('/recipes', (req, res) => {
 
         const recipeId = result.insertId;
 
+        // Uložení instrukcí
         instructions.forEach((instruction, index) => {
             const instructionQuery = 'INSERT INTO recipe_instructions (recipe_id, step_number, instruction) VALUES (?, ?, ?)';
             connection.query(instructionQuery, [recipeId, index + 1, instruction.text], (err) => {
@@ -92,29 +95,43 @@ app.post('/recipes', (req, res) => {
             });
         });
 
+        // Uložení ingrediencí
         ingredients.forEach((ingredient) => {
-            const ingredientQuery = 'INSERT INTO ingredients (name) VALUES (?) ON DUPLICATE KEY UPDATE name=name';
-            connection.query(ingredientQuery, [ingredient.name], (err, result) => {
+            const recipeIngredientQuery = 'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount) VALUES (?, ?, ?)';
+            connection.query(recipeIngredientQuery, [recipeId, ingredient.id, ingredient.amount], (err) => {
                 if (err) {
-                    console.error('Chyba při ukládání ingredience:', err);
-                    return res.status(500).json({ error: "Nastala chyba při ukládání ingrediencí." });
+                    console.error('Chyba při ukládání vztahu mezi receptem a ingrediencí:', err);
+                    return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a ingrediencí." });
                 }
+            });
+        });
 
-                const ingredientId = result.insertId || result[0].id;
+        // Uložení typů jídel (mealtypes)
+        mealtypes.forEach((mealtypeId) => {
+            const mealtypeQuery = 'INSERT INTO recipe_mealtypes (recipe_id, mealtype_id) VALUES (?, ?)';
+            connection.query(mealtypeQuery, [recipeId, mealtypeId], (err) => {
+                if (err) {
+                    console.error('Chyba při ukládání vztahu mezi receptem a typem jídla:', err);
+                    return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a typem jídla." });
+                }
+            });
+        });
 
-                const recipeIngredientQuery = 'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount) VALUES (?, ?, ?)';
-                connection.query(recipeIngredientQuery, [recipeId, ingredientId, ingredient.amount], (err) => {
-                    if (err) {
-                        console.error('Chyba při ukládání vztahu mezi receptem a ingrediencí:', err);
-                        return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a ingrediencí." });
-                    }
-                });
+        // Uložení kategorií (categories)
+        categories.forEach((categoryId) => {
+            const categoryQuery = 'INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)';
+            connection.query(categoryQuery, [recipeId, categoryId], (err) => {
+                if (err) {
+                    console.error('Chyba při ukládání vztahu mezi receptem a kategorií:', err);
+                    return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a kategorií." });
+                }
             });
         });
 
         res.status(201).json({ message: "Recept byl úspěšně uložen.", recipeId });
     });
 });
+
 
 // Endpoint pro odstranění receptu
 app.delete('/deleterecipe/:id', (req, res) => {
@@ -372,6 +389,26 @@ app.get('/ingredients', (req, res) => {
         return res.status(500).json({ error: 'Error fetching ingredients.' });
       }
       res.json(results); // Vrátí seznam ingrediencí
+    });
+  });
+
+  app.get('/mealtypes', (req, res) => {
+    connection.query('SELECT name FROM mealtypes', (err, results) => {
+      if (err) {
+        console.error('Error fetching mealtypes:', err);
+        return res.status(500).json({ error: 'Error fetching mealtypes.' });
+      }
+      res.json(results); // Vrátí seznam mealtypes
+    });
+  });
+
+  app.get('/categories', (req, res) => {
+    connection.query('SELECT name FROM categories', (err, results) => {
+      if (err) {
+        console.error('Error fetching categories:', err);
+        return res.status(500).json({ error: 'Error fetching categories.' });
+      }
+      res.json(results); // Vrátí seznam kategorii
     });
   });
 

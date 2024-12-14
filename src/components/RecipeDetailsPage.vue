@@ -39,14 +39,13 @@
           <h3>{{ recipe.instructions[currentStepIndex].instruction }}</h3>
           <div class="timer">
             <div class="timer-edit">
-              <label>Hodiny:</label>
               <input type="number" v-model="hours" min="0" class="timer-input" />
-              <label>Minuty:</label>
+              <label>:</label>
               <input type="number" v-model="minutes" min="0" max="59" class="timer-input" />
-              <label>Sekundy:</label>
+              <label>:</label>
               <input type="number" v-model="seconds" min="0" max="59" class="timer-input" />
             </div>
-            <p>{{ hours }} : {{ minutes < 10 ? '0' + minutes : minutes }} : {{ seconds < 10 ? '0' + seconds : seconds }}</p>
+            <!--<p>{{ hours }} : {{ minutes < 10 ? '0' + minutes : minutes }} : {{ seconds < 10 ? '0' + seconds : seconds }}</p>-->
             <button @click="startTimer" :disabled="isTimerRunning" class="btn btn-success">Start Timer</button>
             <button @click="stopTimer" :disabled="!isTimerRunning" class="btn btn-danger">Stop Timer</button>
             <button @click="resetTimer" class="btn btn-warning">Reset Timer</button>
@@ -287,7 +286,7 @@ button:disabled {
 }
 
 .timer-input {
-  width: 60px;
+  width: 100px;
   padding: 5px;
   font-size: 16px;
   margin-left: 10px;
