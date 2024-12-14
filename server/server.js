@@ -95,43 +95,103 @@ app.post('/recipes', (req, res) => {
             });
         });
 
-        // Uložení ingrediencí
+        // Uložení ingrediencí a vztahů mezi receptem a ingrediencemi
         ingredients.forEach((ingredient) => {
-            const recipeIngredientQuery = 'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount) VALUES (?, ?, ?)';
-            connection.query(recipeIngredientQuery, [recipeId, ingredient.id, ingredient.amount], (err) => {
+            const ingredientQuery = 'SELECT id FROM ingredients WHERE name = ?';
+            connection.query(ingredientQuery, [ingredient.name], (err, result) => {
                 if (err) {
-                    console.error('Chyba při ukládání vztahu mezi receptem a ingrediencí:', err);
-                    return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a ingrediencí." });
+                    console.error('Chyba při hledání ingredience:', err);
+                    return res.status(500).json({ error: "Nastala chyba při hledání ingredience." });
                 }
+
+                let ingredientId;
+                if (result.length > 0) {
+                    // Pokud ingredience existuje, použijeme její ID
+                    ingredientId = result[0].id;
+                } else {
+                    // Pokud neexistuje, můžeme ji přidat a použít nově vložené ID
+                    const insertIngredientQuery = 'INSERT INTO ingredients (name) VALUES (?)';
+                    connection.query(insertIngredientQuery, [ingredient.name], (err, result) => {
+                        if (err) {
+                            console.error('Chyba při ukládání ingredience:', err);
+                            return res.status(500).json({ error: "Nastala chyba při ukládání ingrediencí." });
+                        }
+                        ingredientId = result.insertId;
+                    });
+                }
+
+                // Vložení vztahu mezi receptem a ingrediencí
+                const recipeIngredientQuery = 'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount) VALUES (?, ?, ?)';
+                connection.query(recipeIngredientQuery, [recipeId, ingredientId, ingredient.amount], (err) => {
+                    if (err) {
+                        console.error('Chyba při ukládání vztahu mezi receptem a ingrediencí:', err);
+                        return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a ingrediencí." });
+                    }
+                });
             });
         });
 
-        // Uložení typů jídel (mealtypes)
-        mealtypes.forEach((mealtypeId) => {
-            const mealtypeQuery = 'INSERT INTO recipe_mealtypes (recipe_id, mealtype_id) VALUES (?, ?)';
-            connection.query(mealtypeQuery, [recipeId, mealtypeId], (err) => {
+        // Uložení mealtypes (typy jídel)
+        mealtypes.forEach((mealtypeName) => {
+            const mealtypeQuery = 'SELECT id FROM mealtypes WHERE name = ?';
+            connection.query(mealtypeQuery, [mealtypeName], (err, result) => {
                 if (err) {
-                    console.error('Chyba při ukládání vztahu mezi receptem a typem jídla:', err);
-                    return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a typem jídla." });
+                    console.error('Chyba při hledání typu jídla:', err);
+                    return res.status(500).json({ error: "Nastala chyba při hledání typu jídla." });
                 }
+
+                let mealtypeId;
+                if (result.length > 0) {
+                    // Pokud typ jídla existuje, použijeme jeho ID
+                    mealtypeId = result[0].id;
+                } else {
+                    console.log(`Typ jídla "${mealtypeName}" neexistuje, přeskočeno.`);
+                    return; // Pokud typ jídla neexistuje, přeskočíme přidání tohoto typu
+                }
+
+                // Vložení vztahu mezi receptem a mealtype
+                const recipeMealtypeQuery = 'INSERT INTO recipe_mealtypes (recipe_id, mealtype_id) VALUES (?, ?)';
+                connection.query(recipeMealtypeQuery, [recipeId, mealtypeId], (err) => {
+                    if (err) {
+                        console.error('Chyba při ukládání vztahu mezi receptem a typem jídla:', err);
+                        return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a typem jídla." });
+                    }
+                });
             });
         });
 
-        // Uložení kategorií (categories)
-        categories.forEach((categoryId) => {
-            const categoryQuery = 'INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)';
-            connection.query(categoryQuery, [recipeId, categoryId], (err) => {
+        // Uložení categories (kategorie)
+        categories.forEach((categoryName) => {
+            const categoryQuery = 'SELECT id FROM categories WHERE name = ?';
+            connection.query(categoryQuery, [categoryName], (err, result) => {
                 if (err) {
-                    console.error('Chyba při ukládání vztahu mezi receptem a kategorií:', err);
-                    return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a kategorií." });
+                    console.error('Chyba při hledání kategorie:', err);
+                    return res.status(500).json({ error: "Nastala chyba při hledání kategorie." });
                 }
+
+                let categoryId;
+                if (result.length > 0) {
+                    // Pokud kategorie existuje, použijeme její ID
+                    categoryId = result[0].id;
+                } else {
+                    console.log(`Kategorie "${categoryName}" neexistuje, přeskočeno.`);
+                    return; // Pokud kategorie neexistuje, přeskočíme přidání této kategorie
+                }
+
+                // Vložení vztahu mezi receptem a kategorií
+                const recipeCategoryQuery = 'INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)';
+                connection.query(recipeCategoryQuery, [recipeId, categoryId], (err) => {
+                    if (err) {
+                        console.error('Chyba při ukládání vztahu mezi receptem a kategorií:', err);
+                        return res.status(500).json({ error: "Nastala chyba při ukládání vztahu mezi receptem a kategorií." });
+                    }
+                });
             });
         });
 
         res.status(201).json({ message: "Recept byl úspěšně uložen.", recipeId });
     });
 });
-
 
 // Endpoint pro odstranění receptu
 app.delete('/deleterecipe/:id', (req, res) => {
@@ -162,7 +222,6 @@ app.delete('/deleterecipe/:id', (req, res) => {
         });
     });
 });
-
 
 // Endpoint pro získání uživatelského profilu a jeho receptů
 app.get('/datareceptprofile', (req, res) => {

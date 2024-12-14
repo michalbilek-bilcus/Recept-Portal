@@ -194,19 +194,19 @@ export default {
     }
 
     const recipeData = {
-      userId: user.id,
-      ...this.recipe,
-      instructions: this.instructions.map((instruction, index) => ({
-        step_number: index + 1,
-        text: instruction.text
-      })),
-      ingredients: this.ingredients.map(ingredient => ({
-        name: ingredient.name,
-        amount: ingredient.amount
-      })),
-      mealtypes: this.selectedMealtypes.map(mealtype => mealtype.id), // Přidání vybraných typů jídel
-      categories: this.selectedCategories.map(category => category.id) // Přidání vybraných kategorií
-    };
+  userId: user.id,
+  ...this.recipe,
+  instructions: this.instructions.map((instruction, index) => ({
+    step_number: index + 1,
+    text: instruction.text
+  })),
+  ingredients: this.ingredients.map(ingredient => ({
+    name: ingredient.name,
+    amount: ingredient.amount
+  })),
+  mealtypes: this.selectedMealType ? [this.selectedMealType] : [],  // Ujistěte se, že je to pole
+  categories: this.selectedCategory ? [this.selectedCategory] : []  // Ujistěte se, že je to pole
+};
 
     const response = await fetch('http://localhost:3000/recipes', {
       method: 'POST',
