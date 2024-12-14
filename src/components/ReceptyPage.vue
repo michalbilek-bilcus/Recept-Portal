@@ -45,15 +45,27 @@
           >
             <div class="recipe-title">{{ recipe.title }}</div>
           </div>
-          <div class="card-body">
-            <!-- Ingredience receptu -->
-            <ul class="list-unstyled recipe-ingredients">
-              <li v-for="(ingredient, index) in (recipe.ingredients ? recipe.ingredients.split(',') : [])" 
-                  :key="`${ingredient.trim()}-${index}`">  <!-- Unikátní key pro každou ingredienci -->
-                {{ ingredient.trim() }}
-              </li>
-            </ul>
-          </div>
+          <div class="card-body d-flex justify-content-between">
+  <!-- Ingredience receptu -->
+              <ul class="list-unstyled recipe-ingredients">
+                <li
+                  v-for="(ingredient, index) in (Array.isArray(recipe.ingredients) ? recipe.ingredients : recipe.ingredients ? recipe.ingredients.split(',') : [])"
+                  :key="`${ingredient.trim()}-${index}`"
+                >
+                  {{ ingredient.trim() }}
+                </li>
+              </ul>
+
+              <!-- Kategorie a typ jídla -->
+              <div class="recipe-details text-end">
+                <p v-if="recipe.mealtypes" class="meal-types">
+                  <strong>Typ jídla:</strong> {{ Array.isArray(recipe.mealtypes) ? recipe.mealtypes.join(', ') : recipe.mealtypes }}
+                </p>
+                <p v-if="recipe.categories" class="categories">
+                  <strong>Kategorie:</strong> {{ Array.isArray(recipe.categories) ? recipe.categories.join(', ') : recipe.categories }}
+                </p>
+              </div>
+            </div>
         </div>
       </div>
     </div>
@@ -237,5 +249,20 @@ export default {
 
 .text-danger {
   padding-bottom: 20px;
+}
+
+.recipe-details {
+  text-align: right;
+}
+
+.recipe-details strong {
+  font-size: 0.8em;
+  display: block;
+}
+
+.recipe-details ul {
+  padding-left: 0;
+  list-style: none;
+  font-size: 0.7em;
 }
 </style>

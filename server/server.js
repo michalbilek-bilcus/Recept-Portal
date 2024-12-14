@@ -306,7 +306,6 @@ app.get('/recipe/:recipeId', (req, res) => {
                 SELECT ri.step_number, ri.instruction
                 FROM recipe_instructions ri
                 WHERE ri.recipe_id = ?
-
             `;
 
             connection.query(instructionsQuery, [recipeId], (err, instructionResults) => {
@@ -315,50 +314,106 @@ app.get('/recipe/:recipeId', (req, res) => {
                     return res.status(500).json({ error: "Chyba při načítání instrukcí." });
                 }
 
-                // Sestavení odpovědi do JSON formátu
-                const response = {
-                    id: recipe.id,
-                    title: recipe.title,
-                    description: recipe.description,
-                    image: recipe.image,
-                    created_at: recipe.created_at,
-                    author: recipe.author,
-                    ingredients: ingredientResults.map(ingredient => ({
-                        name: ingredient.name,
-                        amount: ingredient.amount
-                    })),
-                    instructions: instructionResults.map(instruction => ({
-                        step_number: instruction.step_number,
-                        instruction: instruction.instruction
-                    }))
-                };
+                // Dotaz pro načtení mealtypes
+                const mealtypesQuery = `
+                    SELECT mt.name
+                    FROM recipe_mealtypes rmt
+                    JOIN mealtypes mt ON rmt.mealtype_id = mt.id
+                    WHERE rmt.recipe_id = ?
+                `;
 
-                res.status(200).json(response);
+                connection.query(mealtypesQuery, [recipeId], (err, mealtypeResults) => {
+                    if (err) {
+                        console.error('Chyba při načítání mealtypes:', err);
+                        return res.status(500).json({ error: "Chyba při načítání mealtypes." });
+                    }
+
+                    // Dotaz pro načtení kategorií
+                    const categoriesQuery = `
+                        SELECT c.name
+                        FROM recipe_categories rc
+                        JOIN categories c ON rc.category_id = c.id
+                        WHERE rc.recipe_id = ?
+                    `;
+
+                    connection.query(categoriesQuery, [recipeId], (err, categoryResults) => {
+                        if (err) {
+                            console.error('Chyba při načítání kategorií:', err);
+                            return res.status(500).json({ error: "Chyba při načítání kategorií." });
+                        }
+
+                        // Sestavení odpovědi do JSON formátu
+                        const response = {
+                            id: recipe.id,
+                            title: recipe.title,
+                            description: recipe.description,
+                            image: recipe.image,
+                            created_at: recipe.created_at,
+                            author: recipe.author,
+                            ingredients: ingredientResults.map(ingredient => ({
+                                name: ingredient.name,
+                                amount: ingredient.amount
+                            })),
+                            instructions: instructionResults.map(instruction => ({
+                                step_number: instruction.step_number,
+                                instruction: instruction.instruction
+                            })),
+                            mealtypes: mealtypeResults.map(mealtype => mealtype.name),
+                            categories: categoryResults.map(category => category.name)
+                        };
+
+                        res.status(200).json(response);
+                    });
+                });
             });
         });
     });
 });
 
 app.get('/random-recipes', (req, res) => {
-    // Dotaz na všechny recepty a jejich ingredience
+    // Dotaz na všechny recepty včetně mealtypes a kategorií
     const query = `
-        SELECT recipes.*, GROUP_CONCAT(ingredients.name) AS ingredients
-        FROM recipes
-        LEFT JOIN recipe_ingredients ON recipes.id = recipe_ingredients.recipe_id
-        LEFT JOIN ingredients ON recipe_ingredients.ingredient_id = ingredients.id
-        GROUP BY recipes.id
+        SELECT 
+            r.id, 
+            r.title, 
+            r.description, 
+            r.image, 
+            r.created_at,
+            GROUP_CONCAT(DISTINCT i.name) AS ingredients,
+            GROUP_CONCAT(DISTINCT mt.name) AS mealtypes,
+            GROUP_CONCAT(DISTINCT c.name) AS categories
+        FROM recipes r
+        LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+        LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+        LEFT JOIN recipe_mealtypes rmt ON r.id = rmt.recipe_id
+        LEFT JOIN mealtypes mt ON rmt.mealtype_id = mt.id
+        LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id
+        LEFT JOIN categories c ON rc.category_id = c.id
+        GROUP BY r.id
         ORDER BY RAND()
     `;
-    
+
     connection.query(query, (err, results) => {
         if (err) {
             console.error('Chyba při načítání receptů: ', err);
             return res.status(500).json({ error: 'Chyba při načítání receptů.' });
         }
-        res.json(results);  // Vrátí všechny recepty v náhodném pořadí, včetně ingrediencí
+
+        // Zpracování výsledků a transformace do požadovaného formátu
+        const formattedResults = results.map(recipe => ({
+            id: recipe.id,
+            title: recipe.title,
+            description: recipe.description,
+            image: recipe.image,
+            created_at: recipe.created_at,
+            ingredients: recipe.ingredients ? recipe.ingredients.split(',') : [],
+            mealtypes: recipe.mealtypes ? recipe.mealtypes.split(',') : [],
+            categories: recipe.categories ? recipe.categories.split(',') : []
+        }));
+
+        res.json(formattedResults); // Vrátí všechny recepty v náhodném pořadí
     });
 });
-
 
 
 app.get('/filter-recipes', (req, res) => {
