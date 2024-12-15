@@ -415,53 +415,66 @@ app.get('/random-recipes', (req, res) => {
     });
 });
 
-
-app.get('/filter-recipes', (req, res) => {
-    const { ingredients, title } = req.query;
-
-    // 1. dotaz na recepty podle filtrů
+  // Backend: API pro filtrování receptů
+  app.get('/filter-recipes', (req, res) => {
+    const { ingredients, title, mealType, category } = req.query;
+  
     let sqlQuery = `
-      SELECT r.id, r.title, r.description, r.image
+      SELECT r.id, r.title, r.description, r.image, 
+             GROUP_CONCAT(DISTINCT mt.name) AS mealtypes, 
+             GROUP_CONCAT(DISTINCT c.name) AS categories
       FROM recipes r
       LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
       LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+      LEFT JOIN recipe_mealtypes rmt ON r.id = rmt.recipe_id
+      LEFT JOIN mealtypes mt ON rmt.mealtype_id = mt.id
+      LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id
+      LEFT JOIN categories c ON rc.category_id = c.id
     `;
-    
+  
     const conditions = [];
     const queryParams = [];
-
-    // Filtr podle ingrediencí, pokud je zadaný
+  
+    // Filtr podle ingrediencí
     if (ingredients && ingredients.trim() !== '') {
       conditions.push("i.name IN (?)");
-      queryParams.push(ingredients.split(',').map(ing => ing.trim())); // Seznam ingrediencí
+      queryParams.push(ingredients.split(',').map(ing => ing.trim()));
     }
-
-    // Filtr podle názvu receptu, pokud je zadaný
+  
+    // Filtr podle názvu
     if (title && title.trim() !== '') {
       conditions.push("r.title LIKE ?");
       queryParams.push(`%${title}%`);
     }
-
-    // Přidání podmínek pro filtraci, pokud existují
+  
+    // Filtr podle typu jídla
+    if (mealType && mealType.trim() !== '') {
+      conditions.push("mt.name = ?");
+      queryParams.push(mealType);
+    }
+  
+    // Filtr podle kategorie
+    if (category && category.trim() !== '') {
+      conditions.push("c.name = ?");
+      queryParams.push(category);
+    }
+  
     if (conditions.length > 0) {
       sqlQuery += " WHERE " + conditions.join(" AND ");
     }
-
-    // Přidání GROUP BY pro zajištění, že každý recept bude vypsán jen jednou
+  
     sqlQuery += " GROUP BY r.id";
-
-    // Spuštění dotazu pro vyhledání receptů
+  
     connection.query(sqlQuery, queryParams, (err, results) => {
       if (err) {
         console.error('Chyba při dotazu na databázi:', err);
         return res.status(500).send('Chyba serveru');
       }
-
+  
       if (results.length === 0) {
         return res.status(404).json({ error: "Žádný recept s těmito kritérii nebyl nalezen." });
       }
-
-      // 2. dotaz pro ingredience pro všechny recepty
+  
       const recipeIds = results.map(recipe => recipe.id);
       const ingredientsQuery = `
         SELECT ri.recipe_id, i.name
@@ -469,32 +482,29 @@ app.get('/filter-recipes', (req, res) => {
         JOIN recipe_ingredients ri ON i.id = ri.ingredient_id
         WHERE ri.recipe_id IN (?)
       `;
-
+  
       connection.query(ingredientsQuery, [recipeIds], (err, ingredientsResults) => {
         if (err) {
           console.error('Chyba při dotazu na ingredience:', err);
           return res.status(500).send('Chyba serveru');
         }
-
-        // Sestavení receptů s ingrediencemi, každý recept se objeví pouze jednou
+  
         const recipesWithIngredients = results.map(recipe => {
-          // Filtrace ingrediencí pro konkrétní recept a spojení do jednoho řetězce
           const recipeIngredients = ingredientsResults
             .filter(ingredient => ingredient.recipe_id === recipe.id)
             .map(ingredient => ingredient.name)
             .join(', ');
-
+  
           return {
             ...recipe,
             ingredients: recipeIngredients
           };
         });
-
-        res.json(recipesWithIngredients); // Vrátí recepty s ingrediencemi
+  
+        res.json(recipesWithIngredients);
       });
     });
-});
-
+  });
 
 app.get('/ingredients', (req, res) => {
     connection.query('SELECT name FROM ingredients', (err, results) => {

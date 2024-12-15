@@ -10,6 +10,23 @@
             {{ ingredient }}
           </option>
         </select>
+
+        <!-- Dropdown pro typ jídla -->
+        <select v-model="searchMealType" class="form-control">
+          <option value="">Vyberte typ jídla</option>
+          <option v-for="mealType in allMealTypes" :key="mealType" :value="mealType">
+            {{ mealType }}
+          </option>
+        </select>
+
+        <!-- Dropdown pro kategorii -->
+        <select v-model="searchCategory" class="form-control">
+          <option value="">Vyberte kategorii</option>
+          <option v-for="category in allCategories" :key="category" :value="category">
+            {{ category }}
+          </option>
+        </select>
+
         <input
           type="text"
           v-model="searchTitle"
@@ -46,26 +63,26 @@
             <div class="recipe-title">{{ recipe.title }}</div>
           </div>
           <div class="card-body d-flex justify-content-between">
-  <!-- Ingredience receptu -->
-              <ul class="list-unstyled recipe-ingredients">
-                <li
-                  v-for="(ingredient, index) in (Array.isArray(recipe.ingredients) ? recipe.ingredients : recipe.ingredients ? recipe.ingredients.split(',') : [])"
-                  :key="`${ingredient.trim()}-${index}`"
-                >
-                  {{ ingredient.trim() }}
-                </li>
-              </ul>
+            <!-- Ingredience receptu -->
+            <ul class="list-unstyled recipe-ingredients">
+              <li
+                v-for="(ingredient, index) in (Array.isArray(recipe.ingredients) ? recipe.ingredients : recipe.ingredients ? recipe.ingredients.split(',') : [])"
+                :key="`${ingredient.trim()}-${index}`"
+              >
+                {{ ingredient.trim() }}
+              </li>
+            </ul>
 
-              <!-- Kategorie a typ jídla -->
-              <div class="recipe-details text-end">
-                <p v-if="recipe.mealtypes" class="meal-types">
-                  <strong>Typ jídla:</strong> {{ Array.isArray(recipe.mealtypes) ? recipe.mealtypes.join(', ') : recipe.mealtypes }}
-                </p>
-                <p v-if="recipe.categories" class="categories">
-                  <strong>Kategorie:</strong> {{ Array.isArray(recipe.categories) ? recipe.categories.join(', ') : recipe.categories }}
-                </p>
-              </div>
+            <!-- Kategorie a typ jídla -->
+            <div class="recipe-details text-end">
+              <p v-if="recipe.mealtypes" class="meal-types">
+                <strong>Typ jídla:</strong> {{ Array.isArray(recipe.mealtypes) ? recipe.mealtypes.join(', ') : recipe.mealtypes }}
+              </p>
+              <p v-if="recipe.categories" class="categories">
+                <strong>Kategorie:</strong> {{ Array.isArray(recipe.categories) ? recipe.categories.join(', ') : recipe.categories }}
+              </p>
             </div>
+          </div>
         </div>
       </div>
     </div>
@@ -79,10 +96,14 @@ export default {
       recipes: [], // Pole všech receptů
       filteredRecipes: [], // Filtrované recepty
       searchIngredients: '', // Zadané ingredience
+      searchMealType: '', // Zadaný typ jídla
+      searchCategory: '', // Zadaná kategorie
       searchTitle: '', // Zadaný název receptu
       loading: false,
       errorMessage: '',
-      allIngredients: [] // Ingredience z databáze
+      allIngredients: [], // Ingredience z databáze
+      allMealTypes: [], // Typy jídel z databáze
+      allCategories: [] // Kategorie z databáze
     };
   },
   methods: {
@@ -93,34 +114,35 @@ export default {
     async filterRecipes() {
       const ingredients = this.searchIngredients.split(',').map((ing) => ing.trim()).filter(Boolean);
       const title = this.searchTitle.trim().toLowerCase();
-
+      const mealType = this.searchMealType;
+      const category = this.searchCategory;
+      
       this.loading = true;
-      this.errorMessage = ''; // Resetování chybové zprávy
+      this.errorMessage = '';
 
-      if (ingredients.length === 0 && title === '') {
-        this.errorMessage = 'Zadejte alespoň jednu ingredienci nebo název receptu.';
+      if (ingredients.length === 0 && title === '' && !mealType && !category) {
+        this.errorMessage = 'Zadejte alespoň jednu ingredienci, název receptu, typ jídla nebo kategorii.';
         this.loading = false;
         return;
       }
 
       try {
-        const response = await fetch(
-          `http://localhost:3000/filter-recipes?ingredients=${ingredients.join(',')}&title=${title}`
-        );
-        
+        const params = new URLSearchParams({
+          ingredients: ingredients.join(','),
+          title: title || '',
+          mealType: mealType || '',
+          category: category || '',
+});
+
+
+        const response = await fetch(`http://localhost:3000/filter-recipes?${params.toString()}`);
+
         if (!response.ok) {
-          throw new Error('nebyl nalezen recept s danou ingrediencí.');
+          throw new Error('Nebyl nalezen žádný recept odpovídající zadaným kritériím.');
         }
 
         const data = await response.json();
-        console.log(data); // Debugging: vypíše data pro kontrolu
-
-        // Pokud server vrátí prázdný seznam, nastavíme chybovou zprávu
-        if (data.length === 0) {
-          this.errorMessage = `Žádný recept s názvem "${title}" nebo požadovanými ingrediencemi nebyl nalezen.`;
-        } else {
-          this.filteredRecipes = data;
-        }
+        this.filteredRecipes = data;
       } catch (error) {
         this.errorMessage = error.message;
       } finally {
@@ -157,6 +179,22 @@ export default {
       }
       const ingredientsData = await ingredientsResponse.json();
       this.allIngredients = ingredientsData.map(item => item.name); // Uložení názvů ingrediencí do pole
+
+      // Získání typů jídel z backendu
+      const mealTypesResponse = await fetch('http://localhost:3000/mealtypes');
+      if (!mealTypesResponse.ok) {
+        throw new Error('Chyba při načítání typů jídel.');
+      }
+      const mealTypesData = await mealTypesResponse.json();
+      this.allMealTypes = mealTypesData.map(item => item.name); // Uložení typů jídel
+
+      // Získání kategorií z backendu
+      const categoriesResponse = await fetch('http://localhost:3000/categories');
+      if (!categoriesResponse.ok) {
+        throw new Error('Chyba při načítání kategorií.');
+      }
+      const categoriesData = await categoriesResponse.json();
+      this.allCategories = categoriesData.map(item => item.name); // Uložení kategorií
 
       // Získání všech receptů
       const response = await fetch('http://localhost:3000/random-recipes');
