@@ -18,24 +18,54 @@
       </div>
 
       <div v-if="currentStep === 2">
-        <!-- Div 2: Instrukce -->
-        <div>
-          <label class="form-label">Instrukce:</label>
-          <div v-for="(instruction, index) in instructions" :key="index" class="input-group mb-2">
-            <span class="input-group-text">Krok {{ index + 1 }}</span>
-            <input
-              type="text"
-              v-model="instruction.text"
-              placeholder="Zadejte instrukci"
-              class="form-control"
-              required
-            />
-            <button @click="removeInstruction(index)" type="button" class="btn btn-danger">Odstranit</button>
-          </div>
-          <p v-if="errors.instructions" class="text-danger">Každý krok musí obsahovat text.</p>
-          <button @click="addInstruction" type="button" class="btn btn-secondary mt-2">Přidat krok</button>
-        </div>
-      </div>
+  <!-- Div 2: Instrukce -->
+  <div>
+    <label class="form-label">Instrukce:</label>
+    <div v-for="(instruction, index) in instructions" :key="'instruction-' + index" class="mb-3">
+    <div class="input-group">
+      <span class="input-group-text">Krok {{ index + 1 }}</span>
+      <input
+        type="text"
+        v-model="instruction.text"
+        placeholder="Zadejte instrukci"
+        class="form-control"
+        required
+      />
+      <button @click="removeInstruction(index)" type="button" class="btn btn-danger">
+        Odstranit
+      </button>
+    </div>
+
+    <!-- Časovač pro tento krok -->
+    <div class="input-group timer mt-2">
+      <input
+        type="number"
+        v-model.number="instruction.timer.hours"
+        placeholder="Hodiny"
+        class="form-control"
+        min="0"
+      />
+      <input
+        type="number"
+        v-model.number="instruction.timer.minutes"
+        placeholder="Minuty"
+        class="form-control"
+        min="0"
+        max="59"
+      />
+      <input
+        type="number"
+        v-model.number="instruction.timer.seconds"
+        placeholder="Sekundy"
+        class="form-control"
+        min="0"
+        max="59"
+      />
+    </div>
+  </div>
+  <button @click="addInstruction" type="button" class="btn btn-secondary mt-2">Přidat krok</button>
+  </div>
+</div>
 
       <div v-if="currentStep === 3">
   <!-- Div 3: Ingredience -->
@@ -66,17 +96,17 @@
   </div>
 </div>
 
-<div v-if="currentStep === 4">
-  <!-- Dropdown pro typy jídel (mealtypes) -->
-  <div class="mb-3">
-    <label class="form-label">Typ jídla:</label>
-    <select v-model="selectedMealType" class="form-control" required>
-      <option value="">Vyberte typ jídla</option>
-      <option v-for="mealtypeOption in allMealtypes" :key="mealtypeOption" :value="mealtypeOption">
-        {{ mealtypeOption }}
-      </option>
-    </select>
-  </div>
+    <div v-if="currentStep === 4">
+      <!-- Dropdown pro typy jídel (mealtypes) -->
+      <div class="mb-3">
+        <label class="form-label">Typ jídla:</label>
+        <select v-model="selectedMealType" class="form-control" required>
+          <option value="">Vyberte typ jídla</option>
+          <option v-for="mealtypeOption in allMealtypes" :key="mealtypeOption" :value="mealtypeOption">
+            {{ mealtypeOption }}
+          </option>
+        </select>
+      </div>
 
         <!-- Dropdown pro kategorie (categories) -->
       <div class="mb-3">
@@ -122,14 +152,15 @@
 export default {
   data() {
     return {
-      currentStep: 1, // Určuje aktuální krok
+      currentStep: 1,
       recipe: {
         title: '',
         description: '',
         image: '',
-
       },
-      instructions: [{ text: '' }],
+      instructions: [
+        { text: '', timer: { hours: 0, minutes: 0, seconds: 0 } },
+      ],
       ingredients: [{ name: '', amount: '' }],
       selectedMealType: '',
       selectedCategory: '',
@@ -139,8 +170,8 @@ export default {
       errors: {
         title: false,
         instructions: false,
-        ingredients: false
-      }
+        ingredients: false,
+      },
     };
   },
   methods: {
@@ -168,7 +199,10 @@ export default {
       this.currentStep--;
     },
     addInstruction() {
-      this.instructions.push({ text: '' });
+      this.instructions.push({
+        text: '',
+        timer: { hours: 0, minutes: 0, seconds: 0 }, // Inicializace nového časovače
+      });
     },
     removeInstruction(index) {
       this.instructions.splice(index, 1);
@@ -193,21 +227,29 @@ export default {
       return;
     }
 
+    // Prepare recipe data
     const recipeData = {
-  userId: user.id,
-  ...this.recipe,
-  instructions: this.instructions.map((instruction, index) => ({
-    step_number: index + 1,
-    text: instruction.text
-  })),
-  ingredients: this.ingredients.map(ingredient => ({
-    name: ingredient.name,
-    amount: ingredient.amount
-  })),
-  mealtypes: this.selectedMealType ? [this.selectedMealType] : [],  // Ujistěte se, že je to pole
-  categories: this.selectedCategory ? [this.selectedCategory] : []  // Ujistěte se, že je to pole
-};
+      userId: user.id,
+      ...this.recipe,
+      instructions: this.instructions.map((instruction, index) => {
+        // Calculate timer in seconds from hours, minutes, and seconds
+        const timerInSeconds = (instruction.timer.hours * 3600) + (instruction.timer.minutes * 60) + instruction.timer.seconds;
 
+        return {
+          step_number: index + 1,
+          text: instruction.text,
+          timer: timerInSeconds, // Odesíláme čas v sekundách
+        };
+      }),
+      ingredients: this.ingredients.map(ingredient => ({
+        name: ingredient.name,
+        amount: ingredient.amount
+      })),
+      mealtypes: this.selectedMealType ? [this.selectedMealType] : [],  // Ensure it's an array
+      categories: this.selectedCategory ? [this.selectedCategory] : []  // Ensure it's an array
+    };
+
+    // Send POST request to the server
     const response = await fetch('http://localhost:3000/recipes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -221,25 +263,21 @@ export default {
     const data = await response.json();
     console.log('Recept byl úspěšně vytvořen:', data);
 
-    // Reset formuláře
+    // Reset form fields after successful creation
     this.recipe = { title: '', description: '', image: '' };
     this.ingredients = [{ name: '', amount: '' }];
-    this.instructions = [{ text: '' }];
-    this.selectedMealtypes = []; // Reset výběru typů jídel
-    this.selectedCategories = []; // Reset výběru kategorií
-    alert('Recept byl úspěšně vytvořen!');
+    this.instructions = [{ text: '', timer: { hours: 0, minutes: 0, seconds: 0 } }];
+    this.selectedMealtypes = []; // Reset selected meal types
+    this.selectedCategories = []; // Reset selected categories
 
+    alert('Recept byl úspěšně vytvořen!');
     this.$router.push('/homepage');
   } catch (error) {
     console.error('Chyba při odesílání receptu:', error);
     this.errorMessage = error.message;
   }
 },
-goHome() {
-  this.$router.push('/homepage');
-}
-
-  }, 
+  },
   async mounted() {
   this.loading = true;
   try {
@@ -297,5 +335,19 @@ goHome() {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+.input-group .form-control {
+  margin-right: 5px;
+}
+
+.input-group.mb-3 {
+  margin-top: 10px;
+}
+
+.timer input {
+  max-width: 50px;
+  text-align: center;
+  margin-right: 5px;
 }
 </style>

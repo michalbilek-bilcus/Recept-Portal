@@ -79,23 +79,36 @@ export default {
     };
   },
   async created() {
-    const recipeId = this.$route.params.id;
-    try {
-      const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
-      if (!response.ok) {
-        throw new Error('Chyba při načítání detailů receptu.');
-      }
-      this.recipe = await response.json();
-    } catch (error) {
-      this.errorMessage = error.message;
-    } finally {
-      this.loading = false;
+  const recipeId = this.$route.params.id;
+  try {
+    const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
+    if (!response.ok) {
+      throw new Error('Chyba při načítání detailů receptu.');
     }
-  },
+    this.recipe = await response.json();
+
+    // Uložení hodnot časovačů pro každý krok receptu
+    this.recipe.instructions.forEach(step => {
+      step.timer_hours = step.timer_hours || 0;
+      step.timer_minutes = step.timer_minutes || 0;
+      step.timer_seconds = step.timer_seconds || 0;
+    });
+  } catch (error) {
+    this.errorMessage = error.message;
+  } finally {
+    this.loading = false;
+  }
+},
   methods: {
     startCooking() {
       this.isCooking = true;
       this.currentStepIndex = 0;
+
+      // Nastavení počátečního časovače podle kroků receptu
+      this.hours = this.recipe.instructions[this.currentStepIndex].timer_hours;
+      this.minutes = this.recipe.instructions[this.currentStepIndex].timer_minutes;
+      this.seconds = this.recipe.instructions[this.currentStepIndex].timer_seconds;
+
       this.initialHours = this.hours;
       this.initialMinutes = this.minutes;
       this.initialSeconds = this.seconds;
@@ -103,11 +116,33 @@ export default {
     nextStep() {
       if (this.currentStepIndex < this.recipe.instructions.length - 1) {
         this.currentStepIndex++;
+
+        // Aktualizace časovače na nový krok
+        const currentStep = this.recipe.instructions[this.currentStepIndex];
+        this.hours = currentStep.timer_hours;
+        this.minutes = currentStep.timer_minutes;
+        this.seconds = currentStep.timer_seconds;
+
+        // Uložení počátečních hodnot pro resetování
+        this.initialHours = this.hours;
+        this.initialMinutes = this.minutes;
+        this.initialSeconds = this.seconds;
       }
     },
     previousStep() {
       if (this.currentStepIndex > 0) {
         this.currentStepIndex--;
+
+        // Aktualizace časovače na předchozí krok
+        const currentStep = this.recipe.instructions[this.currentStepIndex];
+        this.hours = currentStep.timer_hours;
+        this.minutes = currentStep.timer_minutes;
+        this.seconds = currentStep.timer_seconds;
+
+        // Uložení počátečních hodnot pro resetování
+        this.initialHours = this.hours;
+        this.initialMinutes = this.minutes;
+        this.initialSeconds = this.seconds;
       }
     },
     finishCooking() {
@@ -129,6 +164,7 @@ export default {
         }
         if (this.hours === 0 && this.minutes === 0 && this.seconds === 0) {
           this.stopTimer();
+          alert('Čas na tento krok vypršel!');
         }
       }, 1000);
     },

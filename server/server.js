@@ -86,11 +86,15 @@ app.post('/recipes', (req, res) => {
 
         // Uložení instrukcí
         instructions.forEach((instruction, index) => {
-            const instructionQuery = 'INSERT INTO recipe_instructions (recipe_id, step_number, instruction) VALUES (?, ?, ?)';
-            connection.query(instructionQuery, [recipeId, index + 1, instruction.text], (err) => {
+            const timerInSeconds = instruction.timer || 0; // Pokud není nastaven časovač, uložíme 0
+            const hours = Math.floor(timerInSeconds / 3600); // Vypočítat hodiny
+            const minutes = Math.floor((timerInSeconds % 3600) / 60); // Vypočítat minuty
+            const seconds = timerInSeconds % 60; // Vypočítat sekundy
+
+            const instructionQuery = 'INSERT INTO recipe_instructions (recipe_id, step_number, instruction, timer_hours, timer_minutes, timer_seconds) VALUES (?, ?, ?, ?, ?, ?)';
+            connection.query(instructionQuery, [recipeId, index + 1, instruction.text, hours, minutes, seconds], (err) => {
                 if (err) {
                     console.error('Chyba při ukládání instrukce:', err);
-                    return res.status(500).json({ error: "Nastala chyba při ukládání instrukcí." });
                 }
             });
         });
@@ -106,10 +110,8 @@ app.post('/recipes', (req, res) => {
 
                 let ingredientId;
                 if (result.length > 0) {
-                    // Pokud ingredience existuje, použijeme její ID
                     ingredientId = result[0].id;
                 } else {
-                    // Pokud neexistuje, můžeme ji přidat a použít nově vložené ID
                     const insertIngredientQuery = 'INSERT INTO ingredients (name) VALUES (?)';
                     connection.query(insertIngredientQuery, [ingredient.name], (err, result) => {
                         if (err) {
@@ -120,7 +122,6 @@ app.post('/recipes', (req, res) => {
                     });
                 }
 
-                // Vložení vztahu mezi receptem a ingrediencí
                 const recipeIngredientQuery = 'INSERT INTO recipe_ingredients (recipe_id, ingredient_id, amount) VALUES (?, ?, ?)';
                 connection.query(recipeIngredientQuery, [recipeId, ingredientId, ingredient.amount], (err) => {
                     if (err) {
@@ -142,14 +143,12 @@ app.post('/recipes', (req, res) => {
 
                 let mealtypeId;
                 if (result.length > 0) {
-                    // Pokud typ jídla existuje, použijeme jeho ID
                     mealtypeId = result[0].id;
                 } else {
                     console.log(`Typ jídla "${mealtypeName}" neexistuje, přeskočeno.`);
-                    return; // Pokud typ jídla neexistuje, přeskočíme přidání tohoto typu
+                    return;
                 }
 
-                // Vložení vztahu mezi receptem a mealtype
                 const recipeMealtypeQuery = 'INSERT INTO recipe_mealtypes (recipe_id, mealtype_id) VALUES (?, ?)';
                 connection.query(recipeMealtypeQuery, [recipeId, mealtypeId], (err) => {
                     if (err) {
@@ -171,14 +170,12 @@ app.post('/recipes', (req, res) => {
 
                 let categoryId;
                 if (result.length > 0) {
-                    // Pokud kategorie existuje, použijeme její ID
                     categoryId = result[0].id;
                 } else {
                     console.log(`Kategorie "${categoryName}" neexistuje, přeskočeno.`);
-                    return; // Pokud kategorie neexistuje, přeskočíme přidání této kategorie
+                    return;
                 }
 
-                // Vložení vztahu mezi receptem a kategorií
                 const recipeCategoryQuery = 'INSERT INTO recipe_categories (recipe_id, category_id) VALUES (?, ?)';
                 connection.query(recipeCategoryQuery, [recipeId, categoryId], (err) => {
                     if (err) {
@@ -192,6 +189,7 @@ app.post('/recipes', (req, res) => {
         res.status(201).json({ message: "Recept byl úspěšně uložen.", recipeId });
     });
 });
+
 
 // Endpoint pro odstranění receptu
 app.delete('/deleterecipe/:id', (req, res) => {
@@ -301,9 +299,9 @@ app.get('/recipe/:recipeId', (req, res) => {
                 return res.status(500).json({ error: "Chyba při načítání ingrediencí." });
             }
 
-            // Dotaz pro načtení kroků receptu
+            // Dotaz pro načtení kroků receptu včetně času
             const instructionsQuery = `
-                SELECT ri.step_number, ri.instruction
+                SELECT ri.step_number, ri.instruction, ri.timer_hours, ri.timer_minutes, ri.timer_seconds
                 FROM recipe_instructions ri
                 WHERE ri.recipe_id = ?
             `;
@@ -356,7 +354,10 @@ app.get('/recipe/:recipeId', (req, res) => {
                             })),
                             instructions: instructionResults.map(instruction => ({
                                 step_number: instruction.step_number,
-                                instruction: instruction.instruction
+                                instruction: instruction.instruction,
+                                timer_hours: instruction.timer_hours,
+                                timer_minutes: instruction.timer_minutes,
+                                timer_seconds: instruction.timer_seconds
                             })),
                             mealtypes: mealtypeResults.map(mealtype => mealtype.name),
                             categories: categoryResults.map(category => category.name)
@@ -369,6 +370,7 @@ app.get('/recipe/:recipeId', (req, res) => {
         });
     });
 });
+
 
 app.get('/random-recipes', (req, res) => {
     // Dotaz na všechny recepty včetně mealtypes a kategorií
