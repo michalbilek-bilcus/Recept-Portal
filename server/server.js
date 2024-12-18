@@ -424,7 +424,8 @@ app.get('/random-recipes', (req, res) => {
     let sqlQuery = `
       SELECT r.id, r.title, r.description, r.image, 
              GROUP_CONCAT(DISTINCT mt.name) AS mealtypes, 
-             GROUP_CONCAT(DISTINCT c.name) AS categories
+             GROUP_CONCAT(DISTINCT c.name) AS categories,
+             GROUP_CONCAT(DISTINCT i.name) AS ingredients
       FROM recipes r
       LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
       LEFT JOIN ingredients i ON ri.ingredient_id = i.id
@@ -439,8 +440,9 @@ app.get('/random-recipes', (req, res) => {
   
     // Filtr podle ingrediencí
     if (ingredients && ingredients.trim() !== '') {
+      const ingredientsArray = ingredients.split(',').map(ing => ing.trim());
       conditions.push("i.name IN (?)");
-      queryParams.push(ingredients.split(',').map(ing => ing.trim()));
+      queryParams.push(ingredientsArray);
     }
   
     // Filtr podle názvu
@@ -466,6 +468,13 @@ app.get('/random-recipes', (req, res) => {
     }
   
     sqlQuery += " GROUP BY r.id";
+  
+    // Přidáme podmínku, že recept musí mít všechny vybrané ingredience
+    if (ingredients && ingredients.trim() !== '') {
+      const ingredientsArray = ingredients.split(',').map(ing => ing.trim());
+      sqlQuery += ` HAVING COUNT(DISTINCT i.name) = ?`;
+      queryParams.push(ingredientsArray.length); // Zajistíme, že bude mít všechny ingredience
+    }
   
     connection.query(sqlQuery, queryParams, (err, results) => {
       if (err) {
@@ -507,6 +516,7 @@ app.get('/random-recipes', (req, res) => {
       });
     });
   });
+  
 
 app.get('/ingredients', (req, res) => {
     connection.query('SELECT name FROM ingredients', (err, results) => {

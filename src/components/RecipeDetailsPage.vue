@@ -37,7 +37,7 @@
         <button @click="closeGuide" class="close-btn">×</button>
         <div class="guide-steps">
           <h3>{{ recipe.instructions[currentStepIndex].instruction }}</h3>
-          <div class="timer">
+          <div v-if="hours !== 0 || minutes !== 0 || seconds !== 0" class="timer">
             <div class="timer-edit">
               <input type="number" v-model="hours" min="0" class="timer-input" />
               <label>:</label>
@@ -45,7 +45,6 @@
               <label>:</label>
               <input type="number" v-model="seconds" min="0" max="59" class="timer-input" />
             </div>
-            <!--<p>{{ hours }} : {{ minutes < 10 ? '0' + minutes : minutes }} : {{ seconds < 10 ? '0' + seconds : seconds }}</p>-->
             <button @click="startTimer" :disabled="isTimerRunning" class="btn btn-success">Start Timer</button>
             <button @click="stopTimer" :disabled="!isTimerRunning" class="btn btn-danger">Stop Timer</button>
             <button @click="resetTimer" class="btn btn-warning">Reset Timer</button>
@@ -297,6 +296,9 @@ li {
   background-color: #fff;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+.guide-steps h3{
+  padding-bottom: 20px;
 }
 
 .timer {

@@ -4,12 +4,25 @@
     <div class="search-bar">
       <div class="input-group mb-3">
         <!-- Dropdown pro ingredience -->
-        <select v-model="searchIngredients" class="form-control">
-          <option value="">Vyberte ingredienci</option>
-          <option v-for="ingredient in allIngredients" :key="ingredient" :value="ingredient">
-            {{ ingredient }}
-          </option>
-        </select>
+        <!-- Tlačítko pro otevření seznamu ingrediencí -->
+<!-- Tlačítko pro otevření seznamu ingrediencí (můžete ho vynechat pokud nebude potřeba) -->
+<button class="btn btn-info">
+  Vybrat ingredience
+</button>
+
+<!-- Seznam ingrediencí -->
+<div class="ingredient-list">
+  <div v-for="ingredient in allIngredients" :key="ingredient" class="form-check">
+    <input
+      type="checkbox"
+      :value="ingredient"
+      v-model="searchIngredients"
+      class="form-check-input"
+    />
+    <label class="form-check-label">{{ ingredient }}</label>
+  </div>
+</div>
+
 
         <!-- Dropdown pro typ jídla -->
         <select v-model="searchMealType" class="form-control">
@@ -95,7 +108,7 @@ export default {
     return {
       recipes: [], // Pole všech receptů
       filteredRecipes: [], // Filtrované recepty
-      searchIngredients: '', // Zadané ingredience
+      searchIngredients: [], // Zadané ingredience
       searchMealType: '', // Zadaný typ jídla
       searchCategory: '', // Zadaná kategorie
       searchTitle: '', // Zadaný název receptu
@@ -107,48 +120,53 @@ export default {
     };
   },
   methods: {
+    toggleIngredientList() {
+    this.isIngredientListVisible = !this.isIngredientListVisible;
+  },
     navigateToRecipe(recipeId) {
       // Přesměrování na stránku detailů receptu
       this.$router.push({ name: "receptdetails", params: { id: recipeId } });
     },
     async filterRecipes() {
-      const ingredients = this.searchIngredients.split(',').map((ing) => ing.trim()).filter(Boolean);
-      const title = this.searchTitle.trim().toLowerCase();
-      const mealType = this.searchMealType;
-      const category = this.searchCategory;
-      
-      this.loading = true;
-      this.errorMessage = '';
+  const ingredients = this.searchIngredients.map((ing) => ing.trim()).filter(Boolean);
+  const title = this.searchTitle.trim().toLowerCase();
+  const mealType = this.searchMealType;
+  const category = this.searchCategory;
 
-      if (ingredients.length === 0 && title === '' && !mealType && !category) {
-        this.errorMessage = 'Zadejte alespoň jednu ingredienci, název receptu, typ jídla nebo kategorii.';
-        this.loading = false;
-        return;
-      }
+  this.loading = true;
+  this.errorMessage = '';
 
-      try {
-        const params = new URLSearchParams({
-          ingredients: ingredients.join(','),
-          title: title || '',
-          mealType: mealType || '',
-          category: category || '',
+  if (ingredients.length === 0 && title === '' && !mealType && !category) {
+    this.errorMessage = 'Zadejte alespoň jednu ingredienci, název receptu, typ jídla nebo kategorii.';
+    this.loading = false;
+    return;
+  }
+
+  try {
+    const ingredients = this.searchIngredients.map((ing) => ing.trim()).filter(Boolean);
+// Odesílání na backend
+const params = new URLSearchParams({
+  ingredients: ingredients.join(','), // Převod na čárkami oddělený seznam
+  title: this.searchTitle.trim().toLowerCase() || '',
+  mealType: this.searchMealType || '',
+  category: this.searchCategory || '',
 });
 
 
-        const response = await fetch(`http://localhost:3000/filter-recipes?${params.toString()}`);
+    const response = await fetch(`http://localhost:3000/filter-recipes?${params.toString()}`);
 
-        if (!response.ok) {
-          throw new Error('Nebyl nalezen žádný recept odpovídající zadaným kritériím.');
-        }
+    if (!response.ok) {
+      throw new Error('Nebyl nalezen žádný recept odpovídající zadaným kritériím.');
+    }
 
-        const data = await response.json();
-        this.filteredRecipes = data;
-      } catch (error) {
-        this.errorMessage = error.message;
-      } finally {
-        this.loading = false;
-      }
-    },
+    const data = await response.json();
+    this.filteredRecipes = data;
+  } catch (error) {
+    this.errorMessage = error.message;
+  } finally {
+    this.loading = false;
+  }
+},
     async loadRandomRecipes() {
       this.loading = true;
       this.errorMessage = ''; // Resetování chybové zprávy
@@ -272,19 +290,6 @@ export default {
   padding: 0;
 }
 
-.search-bar {
-  margin-bottom: 20px;
-}
-
-.search-bar input,
-.search-bar button {
-  margin-bottom: 10px;
-}
-
-.search-bar input {
-  max-width: 400px;
-}
-
 .text-danger {
   padding-bottom: 20px;
 }
@@ -302,5 +307,12 @@ export default {
   padding-left: 0;
   list-style: none;
   font-size: 0.7em;
+}
+.ingredient-list {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  max-height: 80px;
+  overflow-y: auto;
 }
 </style>
