@@ -1,136 +1,106 @@
 <template>
-  <div class="d-flex justify-content-center align-items-center">
-    <div class="card p-4 shadow-sm w-100">
+  <div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+    <div class="card p-4 shadow w-100" style="max-width: 800px;">
       <h2 class="text-center mb-4">Vytvořit nový recept</h2>
 
       <!-- Zobrazení aktuálního kroku -->
       <div v-if="currentStep === 1">
-        <!-- Div 1: Název receptu a popis -->
         <div class="mb-3">
           <label for="title" class="form-label">Název receptu:</label>
-          <input type="text" id="title" v-model="recipe.title" class="form-control" required />
+          <input type="text" id="title" v-model="recipe.title" class="form-control" placeholder="Zadejte název receptu" required />
           <p v-if="errors.title" class="text-danger">Název receptu je povinný.</p>
         </div>
         <div class="mb-3">
           <label for="description" class="form-label">Popis:</label>
-          <textarea id="description" v-model="recipe.description" class="form-control" rows="4"></textarea>
+          <textarea id="description" v-model="recipe.description" class="form-control" rows="4" placeholder="Popište recept..."></textarea>
         </div>
       </div>
 
       <div v-if="currentStep === 2">
-  <!-- Div 2: Instrukce -->
-  <div>
-    <label class="form-label">Instrukce:</label>
-    <div v-for="(instruction, index) in instructions" :key="'instruction-' + index" class="mb-3">
-    <div class="input-group">
-      <span class="input-group-text">Krok {{ index + 1 }}</span>
-      <input
-        type="text"
-        v-model="instruction.text"
-        placeholder="Zadejte instrukci"
-        class="form-control"
-        required
-      />
-      <button @click="removeInstruction(index)" type="button" class="btn btn-danger">
-        Odstranit
-      </button>
-    </div>
+        <div>
+          <label class="form-label">Instrukce:</label>
+          <div v-for="(instruction, index) in instructions" :key="'instruction-' + index" class="mb-3">
+            <div class="input-group">
+              <span class="input-group-text">Krok {{ index + 1 }}</span>
+              <input
+                type="text"
+                v-model="instruction.text"
+                class="form-control"
+                placeholder="Zadejte instrukci"
+                required
+              />
+              <button @click="removeInstruction(index)" type="button" class="btn btn-outline-danger">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
 
-    <!-- Časovač pro tento krok -->
-    <div class="input-group timer mt-2">
-      <input
-        type="number"
-        v-model.number="instruction.timer.hours"
-        placeholder="Hodiny"
-        class="form-control"
-        min="0"
-      />
-      <input
-        type="number"
-        v-model.number="instruction.timer.minutes"
-        placeholder="Minuty"
-        class="form-control"
-        min="0"
-        max="59"
-      />
-      <input
-        type="number"
-        v-model.number="instruction.timer.seconds"
-        placeholder="Sekundy"
-        class="form-control"
-        min="0"
-        max="59"
-      />
-    </div>
-  </div>
-  <button @click="addInstruction" type="button" class="btn btn-secondary mt-2">Přidat krok</button>
-  </div>
-</div>
-
-      <div v-if="currentStep === 3">
-  <!-- Div 3: Ingredience -->
-  <div>
-    <label class="form-label">Ingredience:</label>
-
-    <!-- Dropdown pro každou ingredienci -->
-    <div v-for="(ingredient, index) in ingredients" :key="index" class="input-group mb-2">
-      <select v-model="ingredient.name" class="form-control" required>
-        <option value="">Vyberte ingredienci</option>
-        <option v-for="ingredientOption in allIngredients" :key="ingredientOption" :value="ingredientOption">
-          {{ ingredientOption }}
-        </option>
-      </select>
-      
-      <input
-        type="text"
-        v-model="ingredient.amount"
-        placeholder="Množství"
-        class="form-control"
-      />
-      <button @click="removeIngredient(index)" type="button" class="btn btn-danger">Odstranit</button>
-    </div>
-
-    <p v-if="errors.ingredients" class="text-danger">Každá ingredience musí mít název a množství.</p>
-
-    <button @click="addIngredient" type="button" class="btn btn-secondary mt-2">Přidat ingredienci</button>
-  </div>
-</div>
-
-    <div v-if="currentStep === 4">
-      <!-- Dropdown pro typy jídel (mealtypes) -->
-      <div class="mb-3">
-        <label class="form-label">Typ jídla:</label>
-        <select v-model="selectedMealType" class="form-control" required>
-          <option value="">Vyberte typ jídla</option>
-          <option v-for="mealtypeOption in allMealtypes" :key="mealtypeOption" :value="mealtypeOption">
-            {{ mealtypeOption }}
-          </option>
-        </select>
+            <div class="input-group mt-2">
+              <input type="number" v-model.number="instruction.timer.hours" class="form-control" placeholder="Hodiny" min="0" />
+              <input type="number" v-model.number="instruction.timer.minutes" class="form-control" placeholder="Minuty" min="0" max="59" />
+              <input type="number" v-model.number="instruction.timer.seconds" class="form-control" placeholder="Sekundy" min="0" max="59" />
+            </div>
+          </div>
+          <button @click="addInstruction" type="button" class="btn btn-outline-primary mt-2">Přidat krok</button>
+        </div>
       </div>
 
-        <!-- Dropdown pro kategorie (categories) -->
-      <div class="mb-3">
-        <label class="form-label">Kategorie:</label>
-          <select v-model="selectedCategory" class="form-control" required>
+      <div v-if="currentStep === 3">
+        <div>
+          <label class="form-label">Ingredience:</label>
+          <div v-for="(ingredient, index) in ingredients" :key="index" class="input-group mb-2">
+            <select v-model="ingredient.name" class="form-control" required>
+              <option value="">Vyberte ingredienci</option>
+              <option v-for="ingredientOption in allIngredients" :key="ingredientOption" :value="ingredientOption">
+                {{ ingredientOption }}
+              </option>
+            </select>
+            <input type="text" v-model="ingredient.amount" class="form-control" placeholder="Množství" />
+            <button @click="removeIngredient(index)" type="button" class="btn btn-outline-danger">
+              <i class="bi bi-x"></i>
+            </button>
+          </div>
+          <button @click="addIngredient" type="button" class="btn btn-outline-primary mt-2">Přidat ingredienci</button>
+        </div>
+      </div>
+
+      <div v-if="currentStep === 4">
+        <div class="mb-3">
+          <label class="form-label">Typ jídla:</label>
+          <select v-model="selectedMealType" class="form-select" required>
+            <option value="">Vyberte typ jídla</option>
+            <option v-for="mealtypeOption in allMealtypes" :key="mealtypeOption" :value="mealtypeOption">
+              {{ mealtypeOption }}
+            </option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Kategorie:</label>
+          <select v-model="selectedCategory" class="form-select" required>
             <option value="">Vyberte kategorii</option>
             <option v-for="categoryOption in allCategories" :key="categoryOption" :value="categoryOption">
               {{ categoryOption }}
             </option>
           </select>
-          <!-- Zobrazení chyby pro mealtype -->
-          <p v-if="errors.mealtypes" class="text-danger">Musíte vybrat typ jídla a kategorii</p>
         </div>
       </div>
 
       <div v-if="currentStep === 5">
-        <!-- Div 5: Obrázek -->
-        <div>
-          <div class="mb-3">
-            <label for="image" class="form-label">Obrázek:</label>
-            <input type="text" id="image" v-model="recipe.image" class="form-control" placeholder="URL obrázku" />
-            <div v-if="recipe.image" class="mt-2 text-center">
-              <img :src="recipe.image" alt="Recipe Image" class="img-fluid" style="max-height: 200px; object-fit: cover;" />
-            </div>
+        <div class="mb-3">
+          <label for="image" class="form-label">Obrázek:</label>
+          <input
+            type="text"
+            id="image"
+            v-model="recipe.image"
+            class="form-control"
+            placeholder="URL obrázku"
+          />
+          <div v-if="recipe.image" class="mt-2 text-center">
+            <img
+              :src="recipe.image"
+              alt="Recipe Image"
+              class="img-fluid rounded"
+              style="max-height: 200px; object-fit: cover;"
+            />
           </div>
         </div>
         <button @click="submitRecipe" class="btn btn-primary w-100 mt-4">Vytvořit recept</button>
@@ -143,7 +113,7 @@
       </div>
 
       <button @click="goHome" class="btn btn-link w-100 mt-3">Domů</button>
-      <p v-if="errorMessage" class="text-danger mt-3">{{ errorMessage }}</p>
+      <p v-if="errorMessage" class="text-danger mt-3 text-center">{{ errorMessage }}</p>
     </div>
   </div>
 </template>
@@ -326,28 +296,19 @@ export default {
 
 <style scoped>
 .card {
-  position: relative;
-  max-width: 50%;
+  max-width: 100%;
   text-align: left;
-  overflow: visible;
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .input-group .form-control {
   margin-right: 5px;
 }
-
 .input-group.mb-3 {
   margin-top: 10px;
-}
-
-.timer input {
-  max-width: 50px;
-  text-align: center;
-  margin-right: 5px;
 }
 </style>

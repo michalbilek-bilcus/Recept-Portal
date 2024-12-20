@@ -1,42 +1,74 @@
 <template>
   <div class="container mt-5">
-    <h2 class="text-center">Vítejte na profilu!</h2>
-    <p class="text-center">Zde najdete informace o svém účtu.</p>
+    <div class="card shadow-lg">
+      <div class="card-body text-center">
+        <h2 class="card-title">Vítejte na profilu!</h2>
+        <p class="card-text">Zde najdete informace o svém účtu.</p>
+      </div>
+    </div>
 
-    <div v-if="user" class="text-center">
-      <h4>{{ user.name }}</h4>
-      <p>Email: {{ user.email }}</p>
+    <div v-if="user" class="mt-4">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body text-center">
+          <h4 class="card-title">{{ user.name }}</h4>
+          <p class="card-text">Email: {{ user.email }}</p>
+        </div>
+      </div>
 
-      <h5>Vaše recepty:</h5>
+      <h5 class="text-center mb-4">Vaše recepty:</h5>
+
       <div v-for="recipe in recipes" :key="recipe.id" class="card mb-3 shadow-sm">
         <div class="card-body">
-          <h6 class="card-title">{{ recipe.title }}</h6>
-          <button @click="toggleRecipeDetails(recipe.id)" class="btn btn-info me-2">
-            {{ expandedRecipe === recipe.id ? 'Skrýt podrobnosti' : 'Zobrazit celý recept' }}
-          </button>
-          <button @click="deleteRecipe(recipe.id)" class="btn btn-danger">
-            Odstranit recept
-          </button>
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">{{ recipe.title }}</h6>
+            <div>
+              <button
+                @click="toggleRecipeDetails(recipe.id)"
+                class="btn btn-info btn-sm me-2"
+              >
+                {{ expandedRecipe === recipe.id ? 'Skrýt podrobnosti' : 'Zobrazit celý recept' }}
+              </button>
+              <button
+                @click="deleteRecipe(recipe.id)"
+                class="btn btn-danger btn-sm"
+              >
+                Odstranit recept
+              </button>
+            </div>
+          </div>
 
           <div v-if="expandedRecipe === recipe.id" class="recipe-details mt-3">
             <h6 class="text-center">Popis:</h6>
             <p class="text-center">{{ recipeDetails.description }}</p>
 
-            <div v-if="recipeDetails.image">
-              <img :src="recipeDetails.image" alt="Obrázek receptu" class="img-fluid mb-3" />
+            <div v-if="recipeDetails.image" class="text-center">
+              <img
+                :src="recipeDetails.image"
+                alt="Obrázek receptu"
+                class="img-fluid rounded shadow-sm mb-3"
+              />
             </div>
 
-            <h6 class="text-start">Kroky:</h6>
-            <ol class="text-start">
-              <li v-for="step in recipeDetails.instructions" :key="step.step_number">
+            <h6>Kroky:</h6>
+            <ol class="list-group list-group-numbered">
+              <li
+                v-for="step in recipeDetails.instructions"
+                :key="step.step_number"
+                class="list-group-item"
+              >
                 {{ step.instruction }}
               </li>
             </ol>
 
-            <h6 class="text-start">Ingredience:</h6>
-            <ul class="text-start">
-              <li v-for="ingredient in recipeDetails.ingredients" :key="ingredient.name">
-                {{ ingredient.name }} - {{ ingredient.amount }}
+            <h6 class="mt-3">Ingredience:</h6>
+            <ul class="list-group">
+              <li
+                v-for="ingredient in recipeDetails.ingredients"
+                :key="ingredient.name"
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                <span>{{ ingredient.name }}</span>
+                <span class="badge bg-primary rounded-pill">{{ ingredient.amount }}</span>
               </li>
             </ul>
           </div>
@@ -44,8 +76,13 @@
       </div>
     </div>
 
-    <p v-if="loading" class="text-center">Načítám profil...</p>
-    <p v-if="errorMessage" class="text-danger text-center">{{ errorMessage }}</p>
+    <div v-if="loading" class="d-flex justify-content-center align-items-center mt-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Načítám...</span>
+      </div>
+    </div>
+
+    <p v-if="errorMessage" class="text-danger text-center mt-3">{{ errorMessage }}</p>
   </div>
 </template>
 
@@ -65,7 +102,7 @@ export default {
     async toggleRecipeDetails(recipeId) {
       if (this.expandedRecipe === recipeId) {
         this.expandedRecipe = null;
-        this.recipeDetails = {}; // Resetuje detailní informace
+        this.recipeDetails = {};
         return;
       }
 
@@ -76,7 +113,7 @@ export default {
         }
 
         this.recipeDetails = await response.json();
-        console.log('Podrobnosti receptu:', this.recipeDetails); // Pro ověření
+        console.log("Podrobnosti receptu:", this.recipeDetails);
         this.expandedRecipe = recipeId;
       } catch (error) {
         console.error(error.message);
@@ -84,7 +121,7 @@ export default {
     },
     async deleteRecipe(recipeId) {
       if (!confirm("Opravdu chcete odstranit tento recept?")) {
-        return; // Zrušení akce
+        return;
       }
       try {
         const response = await fetch(`http://localhost:3000/deleterecipe/${recipeId}`, {
@@ -93,7 +130,7 @@ export default {
         if (!response.ok) {
           throw new Error("Nepodařilo se smazat recept.");
         }
-        this.recipes = this.recipes.filter(recipe => recipe.id !== recipeId); // Aktualizace seznamu receptů
+        this.recipes = this.recipes.filter(recipe => recipe.id !== recipeId);
         alert("Recept byl úspěšně odstraněn.");
       } catch (error) {
         console.error(error.message);
@@ -131,26 +168,7 @@ export default {
 .container {
   max-width: 800px;
 }
-
-.recipe-card {
-  border-radius: 10px;
-}
-
 .recipe-details {
   margin-top: 15px;
-}
-
-.recipe-image {
-  width: 100%;
-  max-width: 300px;
-  margin-bottom: 15px;
-}
-
-.text-start {
-  text-align: left;
-}
-
-.text-center {
-  text-align: center;
 }
 </style>

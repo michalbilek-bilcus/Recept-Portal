@@ -1,58 +1,109 @@
 <template>
   <div class="container mt-5">
-    <div v-if="loading">Načítám detaily receptu...</div>
-    <div v-if="errorMessage" class="text-danger">{{ errorMessage }}</div>
-    <div v-if="recipe" class="recipe-container">
-      <div class="top-left">
-        <h1>{{ recipe.title }}</h1>
-        <img v-if="recipe.image" :src="recipe.image" alt="Obrázek receptu" class="recipe-image" />
+    <div v-if="loading" class="alert alert-info text-center">Načítám detaily receptu...</div>
+    <div v-if="errorMessage" class="alert alert-danger text-center">{{ errorMessage }}</div>
+
+    <div v-if="recipe">
+      <!-- Recipe Header -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <h1 class="display-4">{{ recipe.title }}</h1>
+          <img 
+            v-if="recipe.image" 
+            :src="recipe.image" 
+            alt="Obrázek receptu" 
+            class="img-fluid rounded shadow"
+          />
+        </div>
+        <div class="col-md-4 text-md-end text-center align-self-center">
+          <button 
+            v-if="!isCooking" 
+            @click="startCooking" 
+            class="btn btn-primary btn-lg">
+            Spustit průvodce
+          </button>
+        </div>
       </div>
 
-      <div class="top-right">
-        <button v-if="!isCooking" @click="startCooking" class="btn btn-primary">Spustit průvodce</button>
-      </div>
-
-      <div class="bottom-left">
-        <h2>Ingredience:</h2>
-        <ul>
-          <li v-for="ingredient in recipe.ingredients" :key="ingredient.name">
-            {{ ingredient.name }} - {{ ingredient.amount }}
-          </li>
-        </ul>
-      </div>
-
-      <div class="bottom-right">
-        <h2>Postup:</h2>
-        <ol>
-          <li v-for="step in recipe.instructions" :key="step.step_number">
-            {{ step.instruction }}
-          </li>
-        </ol>
+      <!-- Ingredients and Instructions -->
+      <div class="row">
+        <div class="col-md-6">
+          <h2 class="mb-3">Ingredience</h2>
+          <ul class="list-group">
+            <li 
+              v-for="ingredient in recipe.ingredients" 
+              :key="ingredient.name" 
+              class="list-group-item d-flex justify-content-between align-items-center">
+              {{ ingredient.name }}
+              <span class="badge bg-primary rounded-pill">{{ ingredient.amount }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <h2 class="mb-3">Postup</h2>
+          <ol class="list-group list-group-numbered">
+            <li 
+              v-for="step in recipe.instructions" 
+              :key="step.step_number" 
+              class="list-group-item">
+              {{ step.instruction }}
+            </li>
+          </ol>
+        </div>
       </div>
     </div>
 
-    <!-- Průvodce -->
-    <div v-if="isCooking" class="guide-overlay">
-      <div class="guide-container">
-        <button @click="closeGuide" class="close-btn">×</button>
-        <div class="guide-steps">
-          <h3>{{ recipe.instructions[currentStepIndex].instruction }}</h3>
-          <div v-if="hours !== 0 || minutes !== 0 || seconds !== 0" class="timer">
-            <div class="timer-edit">
-              <input type="number" v-model="hours" min="0" class="timer-input" />
-              <label>:</label>
-              <input type="number" v-model="minutes" min="0" max="59" class="timer-input" />
-              <label>:</label>
-              <input type="number" v-model="seconds" min="0" max="59" class="timer-input" />
+    <!-- Cooking Guide -->
+    <div v-if="isCooking" class="modal fade show" style="display: block; background-color: rgba(0, 0, 0, 0.8);">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Průvodce receptem</h5>
+            <button type="button" class="btn-close" @click="closeGuide"></button>
+          </div>
+          <div class="modal-body">
+            <h3 class="text-center mb-4">{{ recipe.instructions[currentStepIndex].instruction }}</h3>
+
+            <div v-if="hours !== 0 || minutes !== 0 || seconds !== 0" class="text-center mb-4">
+              <div class="input-group justify-content-center">
+                <input type="number" v-model="hours" min="0" class="form-control text-center" style="max-width: 80px;">
+                <span class="input-group-text">:</span>
+                <input type="number" v-model="minutes" min="0" max="59" class="form-control text-center" style="max-width: 80px;">
+                <span class="input-group-text">:</span>
+                <input type="number" v-model="seconds" min="0" max="59" class="form-control text-center" style="max-width: 80px;">
+              </div>
+
+              <div class="mt-3">
+                <button @click="startTimer" :disabled="isTimerRunning" class="btn btn-success me-2">Start</button>
+                <button @click="stopTimer" :disabled="!isTimerRunning" class="btn btn-danger me-2">Stop</button>
+                <button @click="resetTimer" class="btn btn-warning">Reset</button>
+              </div>
             </div>
-            <button @click="startTimer" :disabled="isTimerRunning" class="btn btn-success">Start Timer</button>
-            <button @click="stopTimer" :disabled="!isTimerRunning" class="btn btn-danger">Stop Timer</button>
-            <button @click="resetTimer" class="btn btn-warning">Reset Timer</button>
+
+            <div class="d-flex justify-content-between">
+              <button 
+                @click="previousStep" 
+                :disabled="currentStepIndex === 0" 
+                class="btn btn-secondary">
+                Krok zpátky
+              </button>
+              <button 
+                @click="nextStep" 
+                :disabled="currentStepIndex === recipe.instructions.length - 1" 
+                class="btn btn-primary">
+                Další krok
+              </button>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button 
+              v-if="currentStepIndex === recipe.instructions.length - 1" 
+              @click="finishCooking" 
+              class="btn btn-success w-100">
+              Dokončit
+            </button>
           </div>
         </div>
-        <button @click="previousStep" :disabled="currentStepIndex === 0" class="btn btn-secondary">Krok zpátky</button>
-        <button @click="nextStep" :disabled="currentStepIndex === recipe.instructions.length - 1" class="btn btn-primary">Další krok</button>
-        <button v-if="currentStepIndex === recipe.instructions.length - 1" @click="finishCooking" class="btn btn-success">Dokončit</button>
       </div>
     </div>
   </div>
@@ -78,32 +129,30 @@ export default {
     };
   },
   async created() {
-  const recipeId = this.$route.params.id;
-  try {
-    const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
-    if (!response.ok) {
-      throw new Error('Chyba při načítání detailů receptu.');
-    }
-    this.recipe = await response.json();
+    const recipeId = this.$route.params.id;
+    try {
+      const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
+      if (!response.ok) {
+        throw new Error('Chyba při načítání detailů receptu.');
+      }
+      this.recipe = await response.json();
 
-    // Uložení hodnot časovačů pro každý krok receptu
-    this.recipe.instructions.forEach(step => {
-      step.timer_hours = step.timer_hours || 0;
-      step.timer_minutes = step.timer_minutes || 0;
-      step.timer_seconds = step.timer_seconds || 0;
-    });
-  } catch (error) {
-    this.errorMessage = error.message;
-  } finally {
-    this.loading = false;
-  }
-},
+      this.recipe.instructions.forEach(step => {
+        step.timer_hours = step.timer_hours || 0;
+        step.timer_minutes = step.timer_minutes || 0;
+        step.timer_seconds = step.timer_seconds || 0;
+      });
+    } catch (error) {
+      this.errorMessage = error.message;
+    } finally {
+      this.loading = false;
+    }
+  },
   methods: {
     startCooking() {
       this.isCooking = true;
       this.currentStepIndex = 0;
 
-      // Nastavení počátečního časovače podle kroků receptu
       this.hours = this.recipe.instructions[this.currentStepIndex].timer_hours;
       this.minutes = this.recipe.instructions[this.currentStepIndex].timer_minutes;
       this.seconds = this.recipe.instructions[this.currentStepIndex].timer_seconds;
@@ -116,13 +165,11 @@ export default {
       if (this.currentStepIndex < this.recipe.instructions.length - 1) {
         this.currentStepIndex++;
 
-        // Aktualizace časovače na nový krok
         const currentStep = this.recipe.instructions[this.currentStepIndex];
         this.hours = currentStep.timer_hours;
         this.minutes = currentStep.timer_minutes;
         this.seconds = currentStep.timer_seconds;
 
-        // Uložení počátečních hodnot pro resetování
         this.initialHours = this.hours;
         this.initialMinutes = this.minutes;
         this.initialSeconds = this.seconds;
@@ -132,13 +179,11 @@ export default {
       if (this.currentStepIndex > 0) {
         this.currentStepIndex--;
 
-        // Aktualizace časovače na předchozí krok
         const currentStep = this.recipe.instructions[this.currentStepIndex];
         this.hours = currentStep.timer_hours;
         this.minutes = currentStep.timer_minutes;
         this.seconds = currentStep.timer_seconds;
 
-        // Uložení počátečních hodnot pro resetování
         this.initialHours = this.hours;
         this.initialMinutes = this.minutes;
         this.initialSeconds = this.seconds;
@@ -191,147 +236,14 @@ export default {
 </script>
 
 <style scoped>
-/* Styly zůstávají stejné */
+.modal.fade.show {
+  display: block;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+.modal-content {
+  border-radius: 10px;
+}
 .container {
-  text-align: center;
-}
-
-.recipe-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  margin: 20px;
-}
-
-.top-left, .top-right, .bottom-left, .bottom-right {
-  flex: 1 1 45%;
-  margin: 10px;
-}
-
-.top-left {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.recipe-image {
-  max-width: 100%;
-  height: auto;
-  margin-top: 10px;
-}
-
-.top-right {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.bottom-left, .bottom-right {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
-
-button {
-  margin-top: 10px;
-}
-
-h1 {
-  font-size: 2rem;
-  margin-bottom: 10px;
-}
-
-h2 {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-}
-
-ul, ol {
-  text-align: left;
-  list-style-position: inside;
-  padding-left: 0;
-}
-
-li {
-  margin-bottom: 5px;
-}
-
-.guide-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.guide-container {
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  position: relative;
-  max-width: 600px;
-  width: 100%;
-  text-align: center;
-}
-
-.close-btn {
-  position: absolute;
-  top: -10px;
-  right: 10px;
-  font-size: 30px;
-  background: transparent;
-  border: none;
-  color: #000;
-  cursor: pointer;
-  padding: 5px;
-}
-
-.guide-steps {
-  margin-top: 40px;
-  background-color: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-.guide-steps h3{
   padding-bottom: 20px;
-}
-
-.timer {
-  margin-bottom: 20px;
-  margin-top: 30px;
-}
-
-button {
-  margin-top: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-button:disabled {
-  cursor: not-allowed;
-}
-
-.timer-edit {
-  display: flex;
-  justify-content: space-around;
-  margin-bottom: 10px;
-}
-
-.timer-input {
-  width: 100px;
-  padding: 5px;
-  font-size: 16px;
-  margin-left: 10px;
-  text-align: center;
-}
-
-.timer {
-  margin-bottom: 20px;
 }
 </style>
