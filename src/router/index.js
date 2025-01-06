@@ -8,7 +8,7 @@ import CreateReceptPage from "@/components/CreateReceptPage.vue";
 import RecipeDetailsPage from "@/components/RecipeDetailsPage.vue"; // Import nového komponentu
 
 const routes = [
-  { path: "/homepage", component: HomePage, name: "homepage" },
+  { path: "/", component: HomePage, name: "homepage" },
   { path: "/registrace", component: RegisterPage, name: "registrace" },
   { path: "/prihlaseni", component: LoginPage, name: "prihlaseni" },
   { path: "/profil", component: ProfilePage, name: "profil" },

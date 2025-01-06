@@ -80,7 +80,7 @@ export default {
       this.$root.updateLoginStatus(true);
 
       // Přesměrování na homepage po úspěšné registraci
-      this.$router.push('/homepage');
+      this.$router.push('/');
     } catch (error) {
       console.error('Chyba při registraci:', error);
       this.errorMessage = error.message;
@@ -88,7 +88,7 @@ export default {
   },
   goHome() {
     // Přesměrování na domovskou stránku
-    this.$router.push('/homepage');
+    this.$router.push('/');
   },
 },
 };

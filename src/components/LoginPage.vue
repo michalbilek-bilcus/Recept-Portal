@@ -54,14 +54,14 @@ export default {
         // Zavoláme metodu updateLoginStatus v App.vue pro změnu isLoggedIn na true
         this.$root.updateLoginStatus(true);
 
-        this.$router.push('/homepage');
+        this.$router.push('/');
       } catch (error) {
         console.error('Chyba při přihlášení:', error);
         this.errorMessage = error.message;
       }
     },
     goHome() {
-      this.$router.push('/homepage');
+      this.$router.push('/');
     }
   }
 };

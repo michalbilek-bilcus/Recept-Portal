@@ -3,7 +3,7 @@
     <!-- Vyhledávací pole -->
     <div class="search-bar mb-4">
       <div class="row g-3 align-items-center">
-        <div class="col-auto">
+        <div class="col-auto position-relative">
           <!-- Dropdown pro ingredience -->
           <button 
             class="btn btn-info" 
@@ -16,14 +16,30 @@
             Vybrat ingredience
           </button>
 
-          <div class="collapse" id="ingredientList">
-            <div class="card card-body overflow-auto" style="max-height: 150px;">
-              <div v-for="ingredient in allIngredients" :key="ingredient" class="form-check">
+          <div 
+            class="collapse position-absolute bg-white border rounded shadow" 
+            id="ingredientList" 
+            style="width: 500px; max-height: calc(1.5em * 10 + 1rem); z-index: 1050; top: 100%; left: 0; overflow-y: auto; padding: 0.5rem;"
+          >
+            <div 
+              class="grid-container"
+              style="
+                display: grid; 
+                grid-template-columns: repeat(3, 1fr); 
+                grid-auto-rows: 1.5em; 
+                gap: 0.5rem;
+              "
+            >
+              <div 
+                v-for="ingredient in allIngredients" 
+                :key="ingredient" 
+                class="form-check d-flex align-items-center"
+              >
                 <input
                   type="checkbox"
                   :value="ingredient"
                   v-model="searchIngredients"
-                  class="form-check-input"
+                  class="form-check-input me-1"
                   id="ingredient-{{ingredient}}"
                 />
                 <label class="form-check-label" :for="`ingredient-${ingredient}`">{{ ingredient }}</label>
@@ -62,6 +78,7 @@
         <div class="col-auto">
           <button @click="filterRecipes" class="btn btn-primary">Hledat recepty</button>
           <button @click="loadRandomRecipes" class="btn btn-secondary">Zobrazit všechny recepty</button>
+          <button @click="filterHomeRecipes" class="btn btn-success">Recept z domova</button>
         </div>
       </div>
     </div>
@@ -125,6 +142,7 @@ export default {
       searchMealType: '',
       searchCategory: '',
       searchTitle: '',
+      availableIngredients: ["mouka"], // Zde nahraďte skutečnými ingrediencemi
       loading: false,
       errorMessage: '',
       allIngredients: [],
@@ -135,6 +153,23 @@ export default {
   methods: {
     navigateToRecipe(recipeId) {
       this.$router.push({ name: "receptdetails", params: { id: recipeId } });
+    },
+    async filterHomeRecipes() {
+      this.loading = true;
+      this.errorMessage = '';
+
+      try {
+        const response = await fetch(`http://localhost:3000/filter-recipes?ingredients=${this.availableIngredients.join(',')}`);
+        if (!response.ok) {
+          throw new Error('Nebyl nalezen žádný recept s dostupnými ingrediencemi.');
+        }
+        const data = await response.json();
+        this.filteredRecipes = data;
+      } catch (error) {
+        this.errorMessage = error.message;
+      } finally {
+        this.loading = false;
+      }
     },
     async filterRecipes() {
       const ingredients = this.searchIngredients.map((ing) => ing.trim()).filter(Boolean);
