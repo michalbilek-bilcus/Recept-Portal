@@ -6,8 +6,8 @@
     <div v-if="recipe">
       <!-- Recipe Header -->
       <div class="row mb-4">
-        <div class="col-md-8">
-          <h1 class="display-4">{{ recipe.title }}</h1>
+        <!-- Div pro obrázek -->
+        <div class="col-md-6">
           <img 
             v-if="recipe.image" 
             :src="recipe.image" 
@@ -15,13 +15,11 @@
             class="img-fluid rounded shadow"
           />
         </div>
-        <div class="col-md-4 text-md-end text-center align-self-center">
-          <button 
-            v-if="!isCooking" 
-            @click="startCooking" 
-            class="btn btn-primary btn-lg">
-            Spustit průvodce
-          </button>
+
+        <!-- Div pro popis -->
+        <div class="col-md-6 d-flex flex-column justify-content-center">
+          <h1 class="display-4">{{ recipe.title }}</h1>
+          <p class="mt-3">{{ recipe.description }}</p>
         </div>
       </div>
 
@@ -40,7 +38,16 @@
           </ul>
         </div>
         <div class="col-md-6">
-          <h2 class="mb-3">Postup</h2>
+          <!-- Nadpis "Postup" s tlačítkem -->
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="mb-0">Postup</h2>
+            <button 
+              v-if="!isCooking" 
+              @click="startCooking" 
+              class="btn btn-primary btn-lg">
+              Spustit průvodce
+            </button>
+          </div>
           <ol class="list-group list-group-numbered">
             <li 
               v-for="step in recipe.instructions" 
@@ -245,5 +252,22 @@ export default {
 }
 .container {
   padding-bottom: 20px;
+}
+.modal.fade.show {
+  display: block;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+.modal-content {
+  border-radius: 10px;
+}
+.container {
+  padding-bottom: 20px;
+}
+
+/* Řešení pro text uvnitř divu */
+div {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 </style>

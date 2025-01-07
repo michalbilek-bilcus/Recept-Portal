@@ -167,3 +167,6 @@ INSERT INTO categories (name) VALUES
 ('Slané'),
 ('Zdravé'),
 ('Tradiční');
+
+ALTER TABLE recipes
+ADD COLUMN favourite TINYINT DEFAULT 0;
