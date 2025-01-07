@@ -1,4 +1,6 @@
 <template>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
   <div class="container mt-5">
     <div v-if="loading" class="alert alert-info text-center">Načítám detaily receptu...</div>
     <div v-if="errorMessage" class="alert alert-danger text-center">{{ errorMessage }}</div>
@@ -19,6 +21,11 @@
         <!-- Div pro popis -->
         <div class="col-md-6 d-flex flex-column justify-content-center">
           <h1 class="display-4">{{ recipe.title }}</h1>
+          <i 
+            :class="['bi', isFavourite ? 'bi-star-fill' : 'bi-star', 'fs-2', 'text-warning']" 
+            @click="toggleFavourite"
+            style="cursor: pointer;">
+          </i>
           <p class="mt-3">{{ recipe.description }}</p>
         </div>
       </div>
@@ -133,29 +140,55 @@ export default {
       initialSeconds: 0,
       isTimerRunning: false,
       timerInterval: null,
+      isFavourite: false
     };
   },
   async created() {
-    const recipeId = this.$route.params.id;
-    try {
-      const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
-      if (!response.ok) {
-        throw new Error('Chyba při načítání detailů receptu.');
-      }
-      this.recipe = await response.json();
-
-      this.recipe.instructions.forEach(step => {
-        step.timer_hours = step.timer_hours || 0;
-        step.timer_minutes = step.timer_minutes || 0;
-        step.timer_seconds = step.timer_seconds || 0;
-      });
-    } catch (error) {
-      this.errorMessage = error.message;
-    } finally {
-      this.loading = false;
+  const recipeId = this.$route.params.id;
+  try {
+    const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
+    if (!response.ok) {
+      throw new Error('Chyba při načítání detailů receptu.');
     }
-  },
+    this.recipe = await response.json();
+
+    // Pokud má recept atribut pro oblíbenost, nastavíme ho
+    this.isFavourite = this.recipe.is_favourite || 0; // Předpokládáme, že na serveru je hodnota 1 nebo 0 pro oblíbenost
+
+    this.recipe.instructions.forEach(step => {
+      step.timer_hours = step.timer_hours || 0;
+      step.timer_minutes = step.timer_minutes || 0;
+      step.timer_seconds = step.timer_seconds || 0;
+    });
+  } catch (error) {
+    this.errorMessage = error.message;
+  } finally {
+    this.loading = false;
+  }
+},
   methods: {
+    async toggleFavourite() {
+  try {
+    const response = await fetch(`http://localhost:3000/recipe/${this.recipe.id}/favourite`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        favourite: this.isFavourite ? 0 : 1
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Chyba při aktualizaci oblíbeného stavu receptu.');
+    }
+
+    // Změna stavu oblíbenosti na základě odpovědi
+    this.isFavourite = !this.isFavourite;
+  } catch (error) {
+    console.error(error);
+  }
+},
     startCooking() {
       this.isCooking = true;
       this.currentStepIndex = 0;
@@ -237,8 +270,8 @@ export default {
       this.isCooking = false;
       this.stopTimer();
       this.currentStepIndex = 0;
-    },
-  },
+    }
+  }
 };
 </script>
 

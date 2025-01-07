@@ -390,6 +390,35 @@ app.get('/recipe/:recipeId', (req, res) => {
     });
 });
 
+// API endpoint pro změnu stavu oblíbenosti
+app.patch('/recipe/:recipeId/favourite', (req, res) => {
+    const recipeId = req.params.recipeId;
+    const { favourite } = req.body;
+
+    if (![0, 1].includes(favourite)) {
+        return res.status(400).json({ error: "Hodnota favourite musí být 0 nebo 1." });
+    }
+
+    // Dotaz pro aktualizaci hodnoty 'favourite'
+    const updateFavouriteQuery = `
+        UPDATE recipes
+        SET favourite = ?
+        WHERE id = ?
+    `;
+
+    connection.query(updateFavouriteQuery, [favourite, recipeId], (err, result) => {
+        if (err) {
+            console.error('Chyba při aktualizaci oblíbeného stavu:', err);
+            return res.status(500).json({ error: "Chyba při aktualizaci oblíbeného stavu." });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: "Recept nenalezen." });
+        }
+
+        res.status(200).json({ message: "Stav oblíbenosti úspěšně změněn." });
+    });
+});
 
 app.get('/random-recipes', (req, res) => {
     // Dotaz na všechny recepty včetně mealtypes a kategorií
