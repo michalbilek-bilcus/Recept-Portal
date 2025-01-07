@@ -16,77 +16,9 @@
         </div>
       </div>
 
+      
+
       <div v-if="currentStep === 2">
-  <div>
-    <label class="form-label">Instrukce:</label>
-    <div v-for="(instruction, index) in instructions" :key="'instruction-' + index" class="mb-3">
-      <div class="input-group">
-        <span class="input-group-text">Krok {{ index + 1 }}</span>
-        <input
-          type="text"
-          v-model="instruction.text"
-          class="form-control"
-          placeholder="Zadejte instrukci"
-          required
-        />
-        <button @click="removeInstruction(index)" type="button" class="btn btn-outline-danger">
-          <i class="bi bi-x"></i>
-        </button>
-      </div>
-
-      <!-- Tlačítko pro zobrazení časovače -->
-      <button 
-        @click="toggleTimer(index)" 
-        type="button" 
-        class="btn btn-outline-secondary mt-2"
-      >
-        <i class="bi bi-plus"></i> Časovač
-      </button>
-
-      <!-- Div s časovačem, zobrazí se po kliknutí na tlačítko -->
-      <div v-if="instruction.showTimer" class="input-group mt-2">
-        <div class="input-group-append">
-          <span class="input-group-text">H</span>
-        </div>
-        <input 
-          type="number" 
-          v-model.number="instruction.timer.hours" 
-          class="form-control" 
-          placeholder="Hodiny" 
-          min="0" 
-        />
-        
-        <div class="input-group-append">
-          <span class="input-group-text">M</span>
-        </div>
-        <input 
-          type="number" 
-          v-model.number="instruction.timer.minutes" 
-          class="form-control" 
-          placeholder="Minuty" 
-          min="0" 
-          max="59" 
-        />
-        
-        <div class="input-group-append">
-          <span class="input-group-text">S</span>
-        </div>
-        <input 
-          type="number" 
-          v-model.number="instruction.timer.seconds" 
-          class="form-control" 
-          placeholder="Sekundy" 
-          min="0" 
-          max="59" 
-        />
-      </div>
-    </div>
-    <button @click="addInstruction" type="button" class="btn btn-outline-primary mt-2">Přidat krok</button>
-  </div>
-</div>
-
-
-      <div v-if="currentStep === 3">
         <div>
           <label class="form-label">Ingredience:</label>
           <div v-for="(ingredient, index) in ingredients" :key="index" class="input-group mb-2">
@@ -102,6 +34,74 @@
             </button>
           </div>
           <button @click="addIngredient" type="button" class="btn btn-outline-primary mt-2">Přidat ingredienci</button>
+        </div>
+      </div>
+
+      <div v-if="currentStep === 3">
+        <div>
+          <label class="form-label">Instrukce:</label>
+          <div v-for="(instruction, index) in instructions" :key="'instruction-' + index" class="mb-3">
+            <div class="input-group">
+              <span class="input-group-text">Krok {{ index + 1 }}</span>
+              <input
+                type="text"
+                v-model="instruction.text"
+                class="form-control"
+                required
+              />
+              <button @click="removeInstruction(index)" type="button" class="btn btn-outline-danger">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+
+            <!-- Tlačítko pro zobrazení časovače -->
+            <button 
+              @click="toggleTimer(index)" 
+              type="button" 
+              class="btn btn-outline-secondary mt-2"
+            >
+              <i class="bi bi-plus"></i> Časovač
+            </button>
+
+            <!-- Div s časovačem, zobrazí se po kliknutí na tlačítko -->
+            <div v-if="instruction.showTimer" class="input-group mt-2">
+              <div class="input-group-prepend">
+                <label for="hours-input-{{ index }}" class="input-group-text">Hodiny</label>
+              </div>
+              <input 
+                id="hours-input-{{ index }}"
+                type="number" 
+                v-model.number="instruction.timer.hours" 
+                class="form-control" 
+                min="0" 
+              />
+              
+              <div class="input-group-prepend">
+                <label for="minutes-input-{{ index }}" class="input-group-text">Minuty</label>
+              </div>
+              <input 
+                id="minutes-input-{{ index }}"
+                type="number" 
+                v-model.number="instruction.timer.minutes" 
+                class="form-control" 
+                min="0" 
+                max="59" 
+              />
+              
+              <div class="input-group-prepend">
+                <label for="seconds-input-{{ index }}" class="input-group-text">Sekundy</label>
+              </div>
+              <input 
+                id="seconds-input-{{ index }}"
+                type="number" 
+                v-model.number="instruction.timer.seconds" 
+                class="form-control" 
+                min="0" 
+                max="59" 
+              />
+            </div>
+          </div>
+          <button @click="addInstruction" type="button" class="btn btn-outline-primary mt-2">Přidat krok</button>
         </div>
       </div>
 

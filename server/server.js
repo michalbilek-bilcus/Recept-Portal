@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
+const bcrypt = require('bcryptjs'); // Import bcrypt
 const app = express();
 const PORT = 3000;
 
@@ -27,18 +28,22 @@ connection.connect((err) => {
 // Endpoint pro registraci
 app.post('/register', (req, res) => {
     const { name, email, password } = req.body;
-
     if (!name || !email || !password) {
         return res.status(400).json({ error: "Všechna pole jsou povinná." });
     }
-
-    const query = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
-    connection.query(query, [name, email, password], (err, results) => {
+    bcrypt.hash(password, 10, (err, hashedPassword) => {
         if (err) {
-            console.error('Chyba při vkládání uživatele:', err);
+            console.error('Chyba při šifrování hesla:', err);
             return res.status(500).json({ error: "Nastala chyba při registraci." });
         }
-        res.status(201).json({ message: "Registrace úspěšná", userId: results.insertId });
+        const query = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?)';
+        connection.query(query, [name, email, hashedPassword], (err, results) => {
+            if (err) {
+                console.error('Chyba při vkládání uživatele:', err);
+                return res.status(500).json({ error: "Nastala chyba při registraci." });
+            }
+            res.status(201).json({ message: "Registrace úspěšná", userId: results.insertId });
+        });
     });
 });
 
@@ -50,8 +55,8 @@ app.post('/prihlaseni', (req, res) => {
         return res.status(400).json({ error: "Email a heslo jsou povinné." });
     }
 
-    const query = 'SELECT * FROM users WHERE email = ? AND password = ?';
-    connection.query(query, [email, password], (err, results) => {
+    const query = 'SELECT * FROM users WHERE email = ?';
+    connection.query(query, [email], (err, results) => {
         if (err) {
             console.error('Chyba při přihlašování uživatele:', err);
             return res.status(500).json({ error: "Nastala chyba při přihlašování." });
@@ -61,7 +66,21 @@ app.post('/prihlaseni', (req, res) => {
             return res.status(401).json({ error: "Neplatné přihlašovací údaje." });
         }
 
-        res.status(200).json({ message: "Přihlášení úspěšné", user: results[0] });
+        const user = results[0];
+
+        // Porovnání hesla s šifrovaným heslem v databázi
+        bcrypt.compare(password, user.password, (err, isMatch) => {
+            if (err) {
+                console.error('Chyba při ověřování hesla:', err);
+                return res.status(500).json({ error: "Nastala chyba při ověřování hesla." });
+            }
+
+            if (!isMatch) {
+                return res.status(401).json({ error: "Neplatné přihlašovací údaje." });
+            }
+
+            res.status(200).json({ message: "Přihlášení úspěšné", user: user });
+        });
     });
 });
 
@@ -426,13 +445,13 @@ app.get('/random-recipes', (req, res) => {
              GROUP_CONCAT(DISTINCT mt.name) AS mealtypes, 
              GROUP_CONCAT(DISTINCT c.name) AS categories,
              GROUP_CONCAT(DISTINCT i.name) AS ingredients
-      FROM recipes r
-      LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
-      LEFT JOIN ingredients i ON ri.ingredient_id = i.id
-      LEFT JOIN recipe_mealtypes rmt ON r.id = rmt.recipe_id
-      LEFT JOIN mealtypes mt ON rmt.mealtype_id = mt.id
-      LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id
-      LEFT JOIN categories c ON rc.category_id = c.id
+                FROM recipes r
+                LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+                LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+                LEFT JOIN recipe_mealtypes rmt ON r.id = rmt.recipe_id
+                LEFT JOIN mealtypes mt ON rmt.mealtype_id = mt.id
+                LEFT JOIN recipe_categories rc ON r.id = rc.recipe_id
+                LEFT JOIN categories c ON rc.category_id = c.id
     `;
   
     const conditions = [];

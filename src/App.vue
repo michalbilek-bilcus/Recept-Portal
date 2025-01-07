@@ -2,7 +2,7 @@
   <div id="app">
     <!-- Zobrazí navbar pouze na stránkách, které nejsou 'login' nebo 'register' -->
     <nav v-if="!isAuthPage" class="navbar navbar-expand-lg navbar-light bg-light">
-      <router-link class="navbar-brand" to="/homepage" style="margin-left: 40px;">Receptový portál</router-link>
+      <router-link class="navbar-brand" to="/" style="margin-left: 40px;">Receptový portál</router-link>
       <button
         class="navbar-toggler"
         type="button"

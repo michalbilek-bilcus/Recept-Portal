@@ -41,7 +41,6 @@ export default {
   methods: {
   async register() {
     try {
-      // Kontrola hesla na požadavky
       const passwordRequirements = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
       if (!passwordRequirements.test(this.password)) {
         this.errorMessage = "Heslo musí obsahovat alespoň jedno velké písmeno, jedno číslo a mít minimálně 8 znaků.";
