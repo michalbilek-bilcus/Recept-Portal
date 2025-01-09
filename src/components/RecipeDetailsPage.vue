@@ -144,51 +144,63 @@ export default {
     };
   },
   async created() {
-  const recipeId = this.$route.params.id;
-  try {
-    const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
-    if (!response.ok) {
-      throw new Error('Chyba při načítání detailů receptu.');
+    const recipeId = this.$route.params.id;
+    try {
+      const response = await fetch(`http://localhost:3000/recipe/${recipeId}`);
+      if (!response.ok) {
+        throw new Error('Chyba při načítání detailů receptu.');
+      }
+      this.recipe = await response.json();
+      
+      // Načtení hodnoty favourite
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user) {
+        const favouriteResponse = await fetch(`http://localhost:3000/ratings?userId=${user.id}&recipeId=${recipeId}`);
+        if (favouriteResponse.ok) {
+          const favouriteData = await favouriteResponse.json();
+          this.isFavourite = favouriteData.favourite === 1;
+        }
+      }
+    } catch (error) {
+      this.errorMessage = error.message;
+    } finally {
+      this.loading = false;
     }
-    this.recipe = await response.json();
-
-    // Pokud má recept atribut pro oblíbenost, nastavíme ho
-    this.isFavourite = this.recipe.is_favourite || 0; // Předpokládáme, že na serveru je hodnota 1 nebo 0 pro oblíbenost
-
-    this.recipe.instructions.forEach(step => {
-      step.timer_hours = step.timer_hours || 0;
-      step.timer_minutes = step.timer_minutes || 0;
-      step.timer_seconds = step.timer_seconds || 0;
-    });
-  } catch (error) {
-    this.errorMessage = error.message;
-  } finally {
-    this.loading = false;
-  }
-},
+  },
   methods: {
     async toggleFavourite() {
-  try {
-    const response = await fetch(`http://localhost:3000/recipe/${this.recipe.id}/favourite`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        favourite: this.isFavourite ? 0 : 1
-      })
-    });
+      // Get the logged-in user from localStorage
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        this.errorMessage = "Musíte být přihlášeni, abyste mohli přidat hodnocení.";
+        return;
+      }
 
-    if (!response.ok) {
-      throw new Error('Chyba při aktualizaci oblíbeného stavu receptu.');
-    }
+      // Toggle the favourite state
+      const favourite = this.isFavourite ? 0 : 1;
 
-    // Změna stavu oblíbenosti na základě odpovědi
-    this.isFavourite = !this.isFavourite;
-  } catch (error) {
-    console.error(error);
-  }
-},
+      try {
+        const ratingData = {
+          userId: user.id,
+          recipeId: this.recipe.id,
+          favourite: favourite,
+        };
+
+        const response = await fetch('http://localhost:3000/ratings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(ratingData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Chyba ${response.status}: ${response.statusText}`);
+        }
+
+        this.isFavourite = favourite;
+      } catch (error) {
+        this.errorMessage = error.message;
+      }
+    },
     startCooking() {
       this.isCooking = true;
       this.currentStepIndex = 0;

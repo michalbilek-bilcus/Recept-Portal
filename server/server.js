@@ -390,33 +390,67 @@ app.get('/recipe/:recipeId', (req, res) => {
     });
 });
 
-// API endpoint pro změnu stavu oblíbenosti
-app.patch('/recipe/:recipeId/favourite', (req, res) => {
-    const recipeId = req.params.recipeId;
-    const { favourite } = req.body;
+app.post('/ratings', (req, res) => {
+    const { userId, recipeId, favourite } = req.body;
 
-    if (![0, 1].includes(favourite)) {
-        return res.status(400).json({ error: "Hodnota favourite musí být 0 nebo 1." });
+    // Validate required fields
+    if (userId === undefined || recipeId === undefined || favourite === undefined) {
+        return res.status(400).json({ error: "userId, recipeId and favourite are required." });
     }
 
-    // Dotaz pro aktualizaci hodnoty 'favourite'
-    const updateFavouriteQuery = `
-        UPDATE recipes
-        SET favourite = ?
-        WHERE id = ?
-    `;
-
-    connection.query(updateFavouriteQuery, [favourite, recipeId], (err, result) => {
+    // Check if the rating already exists for the user and recipe
+    const checkQuery = 'SELECT * FROM ratings WHERE user_id = ? AND recipe_id = ?';
+    connection.query(checkQuery, [userId, recipeId], (err, result) => {
         if (err) {
-            console.error('Chyba při aktualizaci oblíbeného stavu:', err);
-            return res.status(500).json({ error: "Chyba při aktualizaci oblíbeného stavu." });
+            console.error('Error checking rating:', err);
+            return res.status(500).json({ error: "Error checking rating." });
+        }
+        
+        if (result.length > 0) {
+            // If rating exists, update the favourite
+            const updateQuery = 'UPDATE ratings SET favourite = ? WHERE user_id = ? AND recipe_id = ?';
+            connection.query(updateQuery, [favourite, userId, recipeId], (err) => {
+                if (err) {
+                    console.error('Error updating rating:', err);
+                    return res.status(500).json({ error: "Error updating rating." });
+                }
+        
+                res.status(200).json({ message: "Rating updated." });
+            });
+        } else {
+            // If rating does not exist, insert new rating with default rating (e.g., 3)
+            const insertQuery = 'INSERT INTO ratings (user_id, recipe_id, favourite, rating) VALUES (?, ?, ?, ?)';
+            connection.query(insertQuery, [userId, recipeId, favourite, 3], (err) => {
+                if (err) {
+                    console.error('Error saving rating:', err);
+                    return res.status(500).json({ error: "Error saving rating." });
+                }
+        
+                res.status(201).json({ message: "Rating saved." });
+            });
+        }
+    });
+});
+
+app.get('/ratings', (req, res) => {
+    const { userId, recipeId } = req.query;
+
+    if (!userId || !recipeId) {
+        return res.status(400).json({ error: "userId and recipeId are required." });
+    }
+
+    const query = 'SELECT favourite FROM ratings WHERE user_id = ? AND recipe_id = ?';
+    connection.query(query, [userId, recipeId], (err, results) => {
+        if (err) {
+            console.error('Error fetching favourite:', err);
+            return res.status(500).json({ error: "Error fetching favourite." });
         }
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: "Recept nenalezen." });
+        if (results.length > 0) {
+            res.status(200).json(results[0]);
+        } else {
+            res.status(404).json({ favourite: 0 });
         }
-
-        res.status(200).json({ message: "Stav oblíbenosti úspěšně změněn." });
     });
 });
 
