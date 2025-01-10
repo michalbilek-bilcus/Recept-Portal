@@ -227,14 +227,42 @@ app.delete('/deleterecipe/:id', (req, res) => {
                 return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (recipe_instructions).' });
             }
 
-            // Mazání samotného receptu
-            connection.query('DELETE FROM recipes WHERE id = ?', [recipeId], (err) => {
+            connection.query('DELETE FROM recipe_mealtypes WHERE recipe_id = ?', [recipeId], (err) => {
                 if (err) {
-                    console.error('Chyba při mazání receptu:', err);
-                    return res.status(500).json({ error: 'Nastala chyba při mazání receptu.' });
+                    console.error('Chyba při mazání závislých dat (recipe_mealtypes):', err);
+                    return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (recipe_mealtypes).' });
                 }
 
-                res.status(200).json({ message: 'Recept byl úspěšně odstraněn.' });
+                connection.query('DELETE FROM recipe_categories WHERE recipe_id = ?', [recipeId], (err) => {
+                    if (err) {
+                        console.error('Chyba při mazání závislých dat (recipe_categories):', err);
+                        return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (recipe_categories).' });
+                    }
+
+                    connection.query('DELETE FROM ratings WHERE recipe_id = ?', [recipeId], (err) => {
+                        if (err) {
+                            console.error('Chyba při mazání závislých dat (ratings):', err);
+                            return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (ratings).' });
+                        }
+
+                        connection.query('DELETE FROM comments WHERE recipe_id = ?', [recipeId], (err) => {
+                            if (err) {
+                                console.error('Chyba při mazání závislých dat (comments):', err);
+                                return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (comments).' });
+                            }
+
+                            // Mazání samotného receptu
+                            connection.query('DELETE FROM recipes WHERE id = ?', [recipeId], (err) => {
+                                if (err) {
+                                    console.error('Chyba při mazání receptu:', err);
+                                    return res.status(500).json({ error: 'Nastala chyba při mazání receptu.' });
+                                }
+
+                                res.status(200).json({ message: 'Recept byl úspěšně odstraněn.' });
+                            });
+                        });
+                    });
+                });
             });
         });
     });
@@ -390,12 +418,56 @@ app.get('/recipe/:recipeId', (req, res) => {
     });
 });
 
-app.post('/ratings', (req, res) => {
+// Endpoint pro ukládání oblíbených receptů
+app.post('/favourites', (req, res) => {
     const { userId, recipeId, favourite } = req.body;
 
     // Validate required fields
     if (userId === undefined || recipeId === undefined || favourite === undefined) {
         return res.status(400).json({ error: "userId, recipeId and favourite are required." });
+    }
+
+    // Check if the favourite already exists for the user and recipe
+    const checkQuery = 'SELECT * FROM ratings WHERE user_id = ? AND recipe_id = ?';
+    connection.query(checkQuery, [userId, recipeId], (err, result) => {
+        if (err) {
+            console.error('Error checking favourite:', err);
+            return res.status(500).json({ error: "Error checking favourite." });
+        }
+        
+        if (result.length > 0) {
+            // If favourite exists, update it
+            const updateQuery = 'UPDATE ratings SET favourite = ? WHERE user_id = ? AND recipe_id = ?';
+            connection.query(updateQuery, [favourite, userId, recipeId], (err) => {
+                if (err) {
+                    console.error('Error updating favourite:', err);
+                    return res.status(500).json({ error: "Error updating favourite." });
+                }
+        
+                res.status(200).json({ message: "Favourite updated." });
+            });
+        } else {
+            // If favourite does not exist, insert new favourite with default rating (e.g., 0)
+            const insertQuery = 'INSERT INTO ratings (user_id, recipe_id, favourite, rating) VALUES (?, ?, ?, ?)';
+            connection.query(insertQuery, [userId, recipeId, favourite, 0], (err) => {
+                if (err) {
+                    console.error('Error saving favourite:', err);
+                    return res.status(500).json({ error: "Error saving favourite." });
+                }
+        
+                res.status(201).json({ message: "Favourite saved." });
+            });
+        }
+    });
+});
+
+// Endpoint pro ukládání hodnocení
+app.post('/ratings', (req, res) => {
+    const { userId, recipeId, rating } = req.body;
+
+    // Validate required fields
+    if (userId === undefined || recipeId === undefined || rating === undefined) {
+        return res.status(400).json({ error: "userId, recipeId and rating are required." });
     }
 
     // Check if the rating already exists for the user and recipe
@@ -407,9 +479,9 @@ app.post('/ratings', (req, res) => {
         }
         
         if (result.length > 0) {
-            // If rating exists, update the favourite
-            const updateQuery = 'UPDATE ratings SET favourite = ? WHERE user_id = ? AND recipe_id = ?';
-            connection.query(updateQuery, [favourite, userId, recipeId], (err) => {
+            // If rating exists, update it
+            const updateQuery = 'UPDATE ratings SET rating = ? WHERE user_id = ? AND recipe_id = ?';
+            connection.query(updateQuery, [rating, userId, recipeId], (err) => {
                 if (err) {
                     console.error('Error updating rating:', err);
                     return res.status(500).json({ error: "Error updating rating." });
@@ -418,9 +490,9 @@ app.post('/ratings', (req, res) => {
                 res.status(200).json({ message: "Rating updated." });
             });
         } else {
-            // If rating does not exist, insert new rating with default rating (e.g., 3)
+            // If rating does not exist, insert new rating with default favourite (e.g., 0)
             const insertQuery = 'INSERT INTO ratings (user_id, recipe_id, favourite, rating) VALUES (?, ?, ?, ?)';
-            connection.query(insertQuery, [userId, recipeId, favourite, 3], (err) => {
+            connection.query(insertQuery, [userId, recipeId, 0, rating], (err) => {
                 if (err) {
                     console.error('Error saving rating:', err);
                     return res.status(500).json({ error: "Error saving rating." });
@@ -432,7 +504,8 @@ app.post('/ratings', (req, res) => {
     });
 });
 
-app.get('/ratings', (req, res) => {
+// Endpoint pro získání hodnoty favourite
+app.get('/favourite', (req, res) => {
     const { userId, recipeId } = req.query;
 
     if (!userId || !recipeId) {
@@ -450,6 +523,29 @@ app.get('/ratings', (req, res) => {
             res.status(200).json(results[0]);
         } else {
             res.status(404).json({ favourite: 0 });
+        }
+    });
+});
+
+// Endpoint pro získání hodnoty rating
+app.get('/rating', (req, res) => {
+    const { userId, recipeId } = req.query;
+
+    if (!userId || !recipeId) {
+        return res.status(400).json({ error: "userId and recipeId are required." });
+    }
+
+    const query = 'SELECT rating FROM ratings WHERE user_id = ? AND recipe_id = ?';
+    connection.query(query, [userId, recipeId], (err, results) => {
+        if (err) {
+            console.error('Error fetching rating:', err);
+            return res.status(500).json({ error: "Error fetching rating." });
+        }
+
+        if (results.length > 0) {
+            res.status(200).json(results[0]);
+        } else {
+            res.status(404).json({ rating: null });
         }
     });
 });

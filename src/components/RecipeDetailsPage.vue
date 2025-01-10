@@ -65,6 +65,27 @@
           </ol>
         </div>
       </div>
+      <!-- Recipe Rating -->
+      <div class="row mt-4">
+        <div class="col-md-12">
+          <h3>Hodnocení receptu</h3>
+          <div class="rating-options">
+            <div v-for="(ratingText, index) in ratingOptions" :key="index" class="form-check">
+              <input 
+                class="form-check-input" 
+                type="radio" 
+                :id="'rating' + index" 
+                :value="index + 1" 
+                v-model="selectedRating"
+                @change="submitRating"
+              />
+              <label class="form-check-label" :for="'rating' + index">
+                {{ ratingText }}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Cooking Guide -->
@@ -140,7 +161,9 @@ export default {
       initialSeconds: 0,
       isTimerRunning: false,
       timerInterval: null,
-      isFavourite: false
+      isFavourite: false,
+      ratingOptions: ['Skvělý', 'Dobrý', 'Dá se', 'Špatný', 'Odpad'],
+      selectedRating: null
     };
   },
   async created() {
@@ -155,10 +178,16 @@ export default {
       // Načtení hodnoty favourite
       const user = JSON.parse(localStorage.getItem('user'));
       if (user) {
-        const favouriteResponse = await fetch(`http://localhost:3000/ratings?userId=${user.id}&recipeId=${recipeId}`);
+        const favouriteResponse = await fetch(`http://localhost:3000/favourite?userId=${user.id}&recipeId=${recipeId}`);
         if (favouriteResponse.ok) {
           const favouriteData = await favouriteResponse.json();
           this.isFavourite = favouriteData.favourite === 1;
+        }
+
+        const ratingResponse = await fetch(`http://localhost:3000/rating?userId=${user.id}&recipeId=${recipeId}`);
+        if (ratingResponse.ok) {
+          const ratingData = await ratingResponse.json();
+          this.selectedRating = ratingData.rating;
         }
       }
     } catch (error) {
@@ -180,10 +209,39 @@ export default {
       const favourite = this.isFavourite ? 0 : 1;
 
       try {
-        const ratingData = {
+        const favouriteData = {
           userId: user.id,
           recipeId: this.recipe.id,
           favourite: favourite,
+        };
+
+        const response = await fetch('http://localhost:3000/favourites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(favouriteData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Chyba ${response.status}: ${response.statusText}`);
+        }
+
+        this.isFavourite = favourite;
+      } catch (error) {
+        this.errorMessage = error.message;
+      }
+    },
+    async submitRating() {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        this.errorMessage = "Musíte být přihlášeni, abyste mohli přidat hodnocení.";
+        return;
+      }
+
+      try {
+        const ratingData = {
+          userId: user.id,
+          recipeId: this.recipe.id,
+          rating: this.selectedRating
         };
 
         const response = await fetch('http://localhost:3000/ratings', {
@@ -196,7 +254,7 @@ export default {
           throw new Error(`Chyba ${response.status}: ${response.statusText}`);
         }
 
-        this.isFavourite = favourite;
+        console.log('Hodnocení bylo úspěšně uloženo.');
       } catch (error) {
         this.errorMessage = error.message;
       }
