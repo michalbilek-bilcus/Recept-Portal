@@ -550,6 +550,50 @@ app.get('/rating', (req, res) => {
     });
 });
 
+// Endpoint pro získání komentářů
+app.get('/comments', (req, res) => {
+    const { recipeId } = req.query;
+
+    if (!recipeId) {
+        return res.status(400).json({ error: "recipeId is required." });
+    }
+
+    const query = `
+        SELECT c.comment, u.name AS user_name
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        WHERE c.recipe_id = ?
+        ORDER BY c.created_at DESC
+    `;
+    connection.query(query, [recipeId], (err, results) => {
+        if (err) {
+            console.error('Error fetching comments:', err);
+            return res.status(500).json({ error: "Error fetching comments." });
+        }
+
+        res.status(200).json(results);
+    });
+});
+
+// Endpoint pro přidání nového komentáře
+app.post('/comments', (req, res) => {
+    const { userId, recipeId, comment } = req.body;
+
+    if (!userId || !recipeId || !comment) {
+        return res.status(400).json({ error: "userId, recipeId and comment are required." });
+    }
+
+    const query = 'INSERT INTO comments (user_id, recipe_id, comment) VALUES (?, ?, ?)';
+    connection.query(query, [userId, recipeId, comment], (err, result) => {
+        if (err) {
+            console.error('Error saving comment:', err);
+            return res.status(500).json({ error: "Error saving comment." });
+        }
+
+        res.status(201).json({ message: "Comment saved." });
+    });
+});
+
 app.get('/random-recipes', (req, res) => {
     // Dotaz na všechny recepty včetně mealtypes a kategorií
     const query = `

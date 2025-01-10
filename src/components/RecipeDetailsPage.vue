@@ -86,6 +86,20 @@
           </div>
         </div>
       </div>
+      <!-- Recipe Comments -->
+      <div class="col-md-6">
+          <h3>Komentáře</h3>
+          <div class="comments-section">
+            <div v-for="comment in comments" :key="comment.id" class="comment">
+              <p><strong>{{ comment.user_name }}:</strong> {{ comment.comment }}</p>
+            </div>
+          </div>
+          <div class="add-comment">
+            <textarea v-model="newComment" placeholder="Napište komentář..." class="form-control"></textarea>
+            <button @click="submitComment" class="btn btn-primary mt-2">Přidat komentář</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Cooking Guide -->
@@ -140,7 +154,6 @@
           </div>
         </div>
       </div>
-    </div>
   </div>
 </template>
 
@@ -163,7 +176,9 @@ export default {
       timerInterval: null,
       isFavourite: false,
       ratingOptions: ['Skvělý', 'Dobrý', 'Dá se', 'Špatný', 'Odpad'],
-      selectedRating: null
+      selectedRating: null,
+      comments: [],
+      newComment: ''
     };
   },
   async created() {
@@ -189,6 +204,12 @@ export default {
           const ratingData = await ratingResponse.json();
           this.selectedRating = ratingData.rating;
         }
+      }
+
+      // Načtení komentářů
+      const commentsResponse = await fetch(`http://localhost:3000/comments?recipeId=${recipeId}`);
+      if (commentsResponse.ok) {
+        this.comments = await commentsResponse.json();
       }
     } catch (error) {
       this.errorMessage = error.message;
@@ -255,6 +276,42 @@ export default {
         }
 
         console.log('Hodnocení bylo úspěšně uloženo.');
+      } catch (error) {
+        this.errorMessage = error.message;
+      }
+    },
+    async submitComment() {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        this.errorMessage = "Musíte být přihlášeni, abyste mohli přidat komentář.";
+        return;
+      }
+
+      try {
+        const commentData = {
+          userId: user.id,
+          recipeId: this.recipe.id,
+          comment: this.newComment
+        };
+
+        const response = await fetch('http://localhost:3000/comments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(commentData),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Chyba ${response.status}: ${response.statusText}`);
+        }
+
+        // Přidání nového komentáře do seznamu komentářů
+        this.comments.push({
+          user_name: user.name,
+          comment: this.newComment
+        });
+
+        // Vyprázdnění pole pro nový komentář
+        this.newComment = '';
       } catch (error) {
         this.errorMessage = error.message;
       }
