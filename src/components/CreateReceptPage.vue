@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+  <div class="d-flex justify-content-center align-items-center mt-5 pt-5">
     <div class="card p-4 shadow w-100" style="max-width: 800px;">
       <h2 class="text-center mb-4">Vytvořit nový recept</h2>
 
