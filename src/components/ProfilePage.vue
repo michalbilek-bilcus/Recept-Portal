@@ -15,7 +15,7 @@
         </div>
       </div>
 
-      <h5 class="text-center mb-4">Vaše recepty:</h5>
+      <h5 class="text-center mb-4" style="color: white;">Moje recepty:</h5>
 
       <div v-for="recipe in recipes" :key="recipe.id" class="card mb-3 shadow-sm">
         <div class="card-body">

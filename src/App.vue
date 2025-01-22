@@ -1,5 +1,6 @@
 <template>
-  <div id="app">
+  <div id="app" class="app-background">
+    <div class="overlay"></div>
     <!-- Zobrazí navbar pouze na stránkách, které nejsou 'login' nebo 'register' -->
     <nav v-if="!isAuthPage" class="navbar navbar-expand-lg navbar-light bg-light">
       <router-link class="navbar-brand" to="/" style="margin-left: 40px;">Receptový portál</router-link>
@@ -90,5 +91,30 @@ export default {
 
 .navbar-nav .btn-outline-primary {
   margin-right: 10px; /* Pro větší mezeru mezi prvním tlačítkem a druhým */
+}
+
+.app-background {
+  position: relative;
+  background-image: url('@/assets/Obrázek WhatsApp, 2025-01-22 v 12.07.27_c7c15541.jpg');
+  background-size: cover;
+  background-position: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Tmavší překryvná vrstva */
+  z-index: 1;
+}
+
+#app > *:not(.overlay) {
+  position: relative;
+  z-index: 2;
 }
 </style>

@@ -594,6 +594,7 @@ app.post('/comments', (req, res) => {
     });
 });
 
+
 app.get('/random-recipes', (req, res) => {
     // Dotaz na všechny recepty včetně mealtypes a kategorií
     const query = `

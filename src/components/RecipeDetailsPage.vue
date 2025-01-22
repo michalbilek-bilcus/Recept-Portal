@@ -7,7 +7,7 @@
 
     <div v-if="recipe">
       <!-- Recipe Header -->
-      <div class="row mb-4">
+      <div class="row mb-4 border rounded p-3 bg-white">
         <!-- Div pro obrázek -->
         <div class="col-md-6">
           <img 
@@ -20,18 +20,20 @@
 
         <!-- Div pro popis -->
         <div class="col-md-6 d-flex flex-column justify-content-center">
-          <h1 class="display-4">{{ recipe.title }}</h1>
-          <i 
-            :class="['bi', isFavourite ? 'bi-star-fill' : 'bi-star', 'fs-2', 'text-warning']" 
-            @click="toggleFavourite"
-            style="cursor: pointer;">
-          </i>
+          <div class="d-flex align-items-center">
+            <h1 class="display-4 me-3">{{ recipe.title }}</h1>
+            <i 
+              :class="['bi', isFavourite ? 'bi-star-fill' : 'bi-star', 'fs-2', 'text-warning']" 
+              @click="toggleFavourite"
+              style="cursor: pointer;">
+            </i>
+          </div>
           <p class="mt-3">{{ recipe.description }}</p>
         </div>
       </div>
 
       <!-- Ingredients and Instructions -->
-      <div class="row">
+      <div class="row border rounded p-3 bg-white">
         <div class="col-md-6">
           <h2 class="mb-3">Ingredience</h2>
           <ul class="list-group">
@@ -61,13 +63,29 @@
               :key="step.step_number" 
               class="list-group-item">
               {{ step.instruction }}
+              <div v-if="step.timer" class="text-muted">
+                <i class="bi bi-clock"></i> {{ formatTimer(step.timer) }}
+              </div>
             </li>
           </ol>
         </div>
       </div>
-      <!-- Recipe Rating -->
-      <div class="row mt-4">
-        <div class="col-md-12">
+
+      <!-- Meal Types and Categories -->
+      <div class="row mt-4 border rounded p-3 bg-white">
+        <div class="col-md-6">
+          <h2 class="mb-3">Typ jídla</h2>
+          <p>{{ recipe.mealtypes.join(', ') }}</p>
+        </div>
+        <div class="col-md-6">
+          <h2 class="mb-3">Kategorie</h2>
+          <p>{{ recipe.categories.join(', ') }}</p>
+        </div>
+      </div>
+
+      <!-- Recipe Rating and Comments -->
+      <div class="row mt-4 border rounded p-3 bg-white">
+        <div class="col-md-6">
           <h3>Hodnocení receptu</h3>
           <div class="rating-options">
             <div v-for="(ratingText, index) in ratingOptions" :key="index" class="form-check">
@@ -85,12 +103,11 @@
             </div>
           </div>
         </div>
-      </div>
-      <!-- Recipe Comments -->
-      <div class="col-md-6">
+
+        <div class="col-md-6">
           <h3>Komentáře</h3>
-          <div class="comments-section">
-            <div v-for="comment in comments" :key="comment.id" class="comment">
+          <div class="comments-section mb-3">
+            <div v-for="comment in comments" :key="comment.id" class="comment p-2 border rounded mb-2">
               <p><strong>{{ comment.user_name }}:</strong> {{ comment.comment }}</p>
             </div>
           </div>
@@ -103,33 +120,46 @@
     </div>
 
     <!-- Cooking Guide -->
-    <div v-if="isCooking" class="modal fade show" style="display: block; background-color: rgba(0, 0, 0, 0.8);">
-      <div class="modal-dialog modal-lg">
+    <div v-if="isCooking" class="modal fade show" style="display: block;">
+      <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Průvodce receptem</h5>
             <button type="button" class="btn-close" @click="closeGuide"></button>
           </div>
           <div class="modal-body">
-            <h3 class="text-center mb-4">{{ recipe.instructions[currentStepIndex].instruction }}</h3>
-
-            <div v-if="hours !== 0 || minutes !== 0 || seconds !== 0" class="text-center mb-4">
-              <div class="input-group justify-content-center">
-                <input type="number" v-model="hours" min="0" class="form-control text-center" style="max-width: 80px;">
-                <span class="input-group-text">:</span>
-                <input type="number" v-model="minutes" min="0" max="59" class="form-control text-center" style="max-width: 80px;">
-                <span class="input-group-text">:</span>
-                <input type="number" v-model="seconds" min="0" max="59" class="form-control text-center" style="max-width: 80px;">
-              </div>
-
-              <div class="mt-3">
-                <button @click="startTimer" :disabled="isTimerRunning" class="btn btn-success me-2">Start</button>
-                <button @click="stopTimer" :disabled="!isTimerRunning" class="btn btn-danger me-2">Stop</button>
-                <button @click="resetTimer" class="btn btn-warning">Reset</button>
+            <div class="current-step mb-4">
+              <h3 class="text-center">{{ recipe.instructions[currentStepIndex].instruction }}</h3>
+              <div v-if="hours !== 0 || minutes !== 0 || seconds !== 0" class="text-center mt-3">
+                <div class="input-group justify-content-center">
+                  <input type="number" v-model="hours" min="0" class="form-control text-center" style="max-width: 80px;">
+                  <span class="input-group-text">:</span>
+                  <input type="number" v-model="minutes" min="0" max="59" class="form-control text-center" style="max-width: 80px;">
+                  <span class="input-group-text">:</span>
+                  <input type="number" v-model="seconds" min="0" max="59" class="form-control text-center" style="max-width: 80px;">
+                </div>
+                <div class="mt-3">
+                  <button @click="startTimer" :disabled="isTimerRunning" class="btn btn-success me-2">Start</button>
+                  <button @click="stopTimer" :disabled="!isTimerRunning" class="btn btn-danger me-2">Stop</button>
+                  <button @click="resetTimer" class="btn btn-warning">Reset</button>
+                </div>
               </div>
             </div>
 
-            <div class="d-flex justify-content-between">
+            <div v-if="recipe.instructions.length > currentStepIndex + 1">
+              <h5 class="text-center">Následující kroky</h5>
+              <ul class="list-group">
+                <li 
+                  v-for="(step, index) in recipe.instructions.slice(currentStepIndex + 1)" 
+                  :key="index" 
+                  class="list-group-item next-step">
+                  {{ step.instruction }}
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="d-flex justify-content-between w-100">
               <button 
                 @click="previousStep" 
                 :disabled="currentStepIndex === 0" 
@@ -143,17 +173,16 @@
                 Další krok
               </button>
             </div>
-          </div>
-          <div class="modal-footer">
             <button 
               v-if="currentStepIndex === recipe.instructions.length - 1" 
               @click="finishCooking" 
-              class="btn btn-success w-100">
+              class="btn btn-success w-100 mt-3">
               Dokončit
             </button>
           </div>
         </div>
       </div>
+    </div>
   </div>
 </template>
 
@@ -358,7 +387,7 @@ export default {
     },
     finishCooking() {
       this.isCooking = false;
-      alert('Recept dokončen!');
+      // No alert after finishing
     },
     startTimer() {
       this.isTimerRunning = true;
@@ -413,21 +442,57 @@ export default {
 .container {
   padding-bottom: 20px;
 }
-.modal.fade.show {
-  display: block;
-  background-color: rgba(0, 0, 0, 0.8);
-}
-.modal-content {
-  border-radius: 10px;
-}
-.container {
-  padding-bottom: 20px;
+.recipe-image {
+  width: 100%;
+  height: auto;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
 }
 
-/* Řešení pro text uvnitř divu */
-div {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  word-break: break-word;
+.recipe-card {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.recipe-card:hover {
+  transform: scale(1.05);
+}
+
+.recipe-title {
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  color: white;
+  text-align: center;
+  width: 100%;
+}
+
+.list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bi-clock {
+  margin-left: 10px;
+}
+
+.comment {
+  background-color: #f8f9fa;
+}
+
+.add-comment textarea {
+  resize: none;
+}
+
+.current-step {
+  font-size: 1.5rem;
+}
+
+.next-step {
+  font-size: 1rem;
+  color: #6c757d;
 }
 </style>

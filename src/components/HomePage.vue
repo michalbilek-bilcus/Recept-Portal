@@ -2,7 +2,7 @@
   <div class="container home mt-5">
     <header class="home-header text-center py-5 bg-warning">
       <h1>Vítejte na Receptovém portálu</h1>
-      <p class="lead">Najděte a sdílejte své oblíbené recepty.</p>
+      <p class="lead" style="color: black;">Najděte a sdílejte své oblíbené recepty.</p>
     </header>
 
     <section class="features row text-center mt-5">
@@ -35,5 +35,10 @@ export default {
 
 .text-warning {
   color: #f7c600;
+}
+
+p {
+  font-size: 1.2rem;
+  color: white;
 }
 </style>

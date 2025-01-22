@@ -8,16 +8,16 @@
           <button 
             class="btn btn-info" 
             type="button" 
-            data-bs-toggle="collapse" 
-            data-bs-target="#ingredientList" 
-            aria-expanded="false" 
+            @click="toggleIngredientDropdown"
+            :aria-expanded="ingredientDropdownOpen"
             aria-controls="ingredientList"
           >
-            Vybrat ingredience
+            {{ ingredientDropdownOpen ? 'Zavřít ingredience' : 'Vybrat ingredience' }}
           </button>
 
           <div 
             class="collapse position-absolute bg-white border rounded shadow" 
+            :class="{ show: ingredientDropdownOpen }"
             id="ingredientList" 
             style="width: 500px; max-height: calc(1.5em * 10 + 1rem); z-index: 1050; top: 100%; left: 0; overflow-y: auto; padding: 0.5rem;"
           >
@@ -147,12 +147,16 @@ export default {
       errorMessage: '',
       allIngredients: [],
       allMealTypes: [],
-      allCategories: []
+      allCategories: [],
+      ingredientDropdownOpen: false
     };
   },
   methods: {
     navigateToRecipe(recipeId) {
       this.$router.push({ name: "receptdetails", params: { id: recipeId } });
+    },
+    toggleIngredientDropdown() {
+      this.ingredientDropdownOpen = !this.ingredientDropdownOpen;
     },
     async filterHomeRecipes() {
       this.loading = true;
