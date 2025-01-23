@@ -3,7 +3,6 @@
     <div class="card shadow-lg">
       <div class="card-body text-center">
         <h2 class="card-title">Vítejte na profilu!</h2>
-        <p class="card-text">Zde najdete informace o svém účtu.</p>
       </div>
     </div>
 

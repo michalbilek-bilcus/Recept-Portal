@@ -28,7 +28,7 @@
               style="cursor: pointer;">
             </i>
           </div>
-          <p class="mt-3">{{ recipe.description }}</p>
+          <p class="mt-3 description">{{ recipe.description }}</p>
         </div>
       </div>
 
@@ -485,6 +485,11 @@ export default {
 
 .add-comment textarea {
   resize: none;
+}
+
+.description {
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .current-step {
