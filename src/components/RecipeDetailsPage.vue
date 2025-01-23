@@ -320,7 +320,8 @@ export default {
         const commentData = {
           userId: user.id,
           recipeId: this.recipe.id,
-          comment: this.newComment
+          comment: this.newComment,
+          created_at: new Date().toISOString()
         };
 
         const response = await fetch('http://localhost:3000/comments', {
@@ -333,11 +334,14 @@ export default {
           throw new Error(`Chyba ${response.status}: ${response.statusText}`);
         }
 
-        // Přidání nového komentáře do seznamu komentářů
-        this.comments.push({
+        // Přidání nového komentáře do seznamu komentářů a jeho seřazení
+        const newComment = {
+          ...commentData,
           user_name: user.name,
-          comment: this.newComment
-        });
+          id: (await response.json()).id // Předpokládáme, že backend vrací ID nového komentáře
+        };
+        this.comments.push(newComment);
+        this.comments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
         // Vyprázdnění pole pro nový komentář
         this.newComment = '';
@@ -481,6 +485,7 @@ export default {
 
 .comment {
   background-color: #f8f9fa;
+  text-align: left; /* Zarovnání všech komentářů napravo */
 }
 
 .add-comment textarea {

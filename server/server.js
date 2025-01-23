@@ -550,7 +550,25 @@ app.get('/rating', (req, res) => {
     });
 });
 
-// Endpoint pro získání komentářů
+// Endpoint pro přidání nového komentáře
+app.post('/comments', (req, res) => {
+    const { userId, recipeId, comment } = req.body;
+
+    if (!userId || !recipeId || !comment) {
+        return res.status(400).json({ error: "userId, recipeId and comment are required." });
+    }
+
+    const query = 'INSERT INTO comments (user_id, recipe_id, comment, created_at) VALUES (?, ?, ?, NOW())';
+    connection.query(query, [userId, recipeId, comment], (err, result) => {
+        if (err) {
+            console.error('Error saving comment:', err);
+            return res.status(500).json({ error: "Error saving comment." });
+        }
+
+        res.status(201).json({ message: "Comment saved.", id: result.insertId });
+    });
+});
+
 app.get('/comments', (req, res) => {
     const { recipeId } = req.query;
 
@@ -558,13 +576,7 @@ app.get('/comments', (req, res) => {
         return res.status(400).json({ error: "recipeId is required." });
     }
 
-    const query = `
-        SELECT c.comment, u.name AS user_name
-        FROM comments c
-        JOIN users u ON c.user_id = u.id
-        WHERE c.recipe_id = ?
-        ORDER BY c.created_at DESC
-    `;
+    const query = 'SELECT c.id, c.comment, c.created_at, u.name AS user_name FROM comments c JOIN users u ON c.user_id = u.id WHERE c.recipe_id = ? ORDER BY c.created_at ASC';
     connection.query(query, [recipeId], (err, results) => {
         if (err) {
             console.error('Error fetching comments:', err);
