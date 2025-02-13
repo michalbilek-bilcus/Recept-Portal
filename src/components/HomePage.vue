@@ -5,7 +5,7 @@
       <p class="lead" style="color: black;">Najděte a sdílejte své oblíbené recepty.</p>
     </header>
 
-    <section class="features row text-center mt-5">
+    <section class="features row text-center mt-5+">
       <div class="feature col-md-4">
         <h2 class="custom-text-warning">Vyhledávání receptů</h2>
         <p>Vyhledejte recept podle ingrediencí nebo typu pokrmu.</p>
