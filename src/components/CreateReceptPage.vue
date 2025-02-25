@@ -7,9 +7,10 @@
       <b-form @submit.prevent="submitRecipe">
         <b-form-group>
           <b-tabs v-model="currentStep" class="mb-3">
-            <b-tab title="Krok 1" active>
+            <b-tab title="Základní informace" active>
               <div v-if="currentStep === 0">
                 <!-- Obsah prvního kroku -->
+                 <br>
                 <b-form-group label="Název receptu" label-for="title">
                   <b-form-input id="title" v-model="recipe.title" required></b-form-input>
                 </b-form-group>
@@ -21,9 +22,10 @@
                 </b-form-group>
               </div>
             </b-tab>
-            <b-tab title="Krok 2">
+            <b-tab title="Ingredience">
               <div v-if="currentStep === 1">
                 <!-- Obsah druhého kroku -->
+                 <br>
                 <b-form-group label="Ingredience">
                   <div v-for="(ingredient, index) in ingredients" :key="index" class="input-group mb-3">
                     <b-form-select v-model="ingredient.name" :options="allIngredients" required>
@@ -38,9 +40,10 @@
                 </b-form-group>
               </div>
             </b-tab>
-            <b-tab title="Krok 3">
+            <b-tab title="Postup">
               <div v-if="currentStep === 2">
                 <!-- Obsah třetího kroku -->
+                 <br>
                 <b-form-group label="Postup">
                   <div v-for="(instruction, index) in instructions" :key="index" class="mb-3">
                     <b-row>
@@ -74,9 +77,10 @@
                 </b-form-group>
               </div>
             </b-tab>
-            <b-tab title="Krok 4">
+            <b-tab title="Typ jídla a kategorie">
               <div v-if="currentStep === 3">
                 <!-- Obsah čtvrtého kroku -->
+                 <br>
                 <b-form-group label="Typ jídla">
                   <b-form-select v-model="selectedMealType" :options="allMealtypes"></b-form-select>
                 </b-form-group>

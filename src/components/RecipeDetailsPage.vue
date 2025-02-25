@@ -1,6 +1,4 @@
 <template>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-
   <div class="container mt-5">
     <div v-if="loading" class="alert alert-info text-center">Načítám detaily receptu...</div>
     <div v-if="errorMessage" class="alert alert-danger text-center">{{ errorMessage }}</div>
@@ -19,6 +17,7 @@
         </div>
 
         <!-- Div pro popis -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
         <div class="col-md-6 d-flex flex-column justify-content-center">
           <div class="d-flex align-items-center">
             <h1 class="display-4 me-3">{{ recipe.title }}</h1>
@@ -45,6 +44,7 @@
               <span class="badge bg-primary rounded-pill">{{ ingredient.amount }}</span>
             </li>
           </ul>
+          <button class="btn btn-secondary mt-3" @click="openIngredientsModal">nákupní košík</button>
         </div>
         <div class="col-md-6">
           <!-- Nadpis "Postup" s tlačítkem -->
@@ -183,11 +183,24 @@
         </div>
       </div>
     </div>
+
+    <!-- Ingredients Modal -->
+    <seznam-ingredienci 
+      v-if="showIngredientsModal" 
+      :ingredients="ingredientsCopy" 
+      @close="showIngredientsModal = false"
+      @remove-ingredient="removeIngredient"
+    />
   </div>
 </template>
 
 <script>
+import SeznamIngredienci from './SeznamIngredienci.vue';
+
 export default {
+  components: {
+    SeznamIngredienci
+  },
   data() {
     return {
       recipe: null,
@@ -207,7 +220,9 @@ export default {
       ratingOptions: ['Skvělý', 'Dobrý', 'Dá se', 'Špatný', 'Odpad'],
       selectedRating: null,
       comments: [],
-      newComment: ''
+      newComment: '',
+      showIngredientsModal: false,
+      ingredientsCopy: []
     };
   },
   async created() {
@@ -430,6 +445,13 @@ export default {
       this.isCooking = false;
       this.stopTimer();
       this.currentStepIndex = 0;
+    },
+    openIngredientsModal() {
+      this.ingredientsCopy = JSON.parse(JSON.stringify(this.recipe.ingredients));
+      this.showIngredientsModal = true;
+    },
+    removeIngredient(index) {
+      this.ingredientsCopy.splice(index, 1);
     }
   }
 };
@@ -485,7 +507,7 @@ export default {
 
 .comment {
   background-color: #f8f9fa;
-  text-align: left; /* Zarovnání všech komentářů napravo */
+  text-align: left; /* Zarovnání všech komentářů vlevo */
 }
 
 .add-comment textarea {

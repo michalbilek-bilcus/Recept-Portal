@@ -32,8 +32,12 @@ export default {
 .custom-home{
   background-color: white !important;
 }
-.custom-text-warning, .home-header {
-  color: #007bff !important;
+.home-header {
+  color: #333 !important;
+}
+.custom-text-warning {
+  margin-top: 50px;
+  color: white;
 }
 
 p {
