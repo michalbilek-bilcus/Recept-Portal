@@ -62,7 +62,9 @@ CREATE TABLE ratings (
   rating TINYINT NOT NULL CHECK (rating >= 1 AND rating <= 5),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (recipe_id) REFERENCES recipes(id),
-  FOREIGN KEY (user_id) REFERENCES users(id) CREATE TABLE recipe_instructions (
+  FOREIGN KEY (user_id) REFERENCES users(id) 
+);
+  CREATE TABLE recipe_instructions (
   id INT AUTO_INCREMENT PRIMARY KEY,
   recipe_id INT NOT NULL,
   step_number INT NOT NULL,

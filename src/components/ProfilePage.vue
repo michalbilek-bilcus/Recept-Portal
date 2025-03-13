@@ -19,7 +19,7 @@
       <div v-for="recipe in recipes" :key="recipe.id" class="card mb-3 shadow-sm">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">{{ recipe.title }}</h6>
+            <h6 class="card-title mb-0">{{ recipe.title }} <span class="badge bg-primary">{{ getRatingText(recipe.averageRating) }}</span></h6>
             <div>
               <button
                 @click="toggleRecipeDetails(recipe.id)"
@@ -94,7 +94,8 @@ export default {
       recipeDetails: {},
       expandedRecipe: null,
       loading: true,
-      errorMessage: ""
+      errorMessage: "",
+      ratingOptions: ['Žádný', 'Skvělý', 'Dobrý', 'Dá se', 'Špatný', 'Odpad']
     };
   },
   methods: {
@@ -135,6 +136,22 @@ export default {
         console.error(error.message);
         alert("Nastala chyba při mazání receptu.");
       }
+    },
+    async fetchAverageRating(recipeId) {
+      try {
+        const response = await fetch(`http://localhost:3000/recipe/${recipeId}/average-rating`);
+        if (!response.ok) {
+          throw new Error("Nepodařilo se načíst průměrné hodnocení.");
+        }
+        const data = await response.json();
+        return data.averageRating;
+      } catch (error) {
+        console.error(error.message);
+        return 0;
+      }
+    },
+    getRatingText(rating) {
+      return this.ratingOptions[rating] || 'Žádný';
     }
   },
   async mounted() {
@@ -153,7 +170,10 @@ export default {
 
       const data = await response.json();
       this.user = data.user;
-      this.recipes = data.recipes;
+      this.recipes = await Promise.all(data.recipes.map(async recipe => {
+        const averageRating = await this.fetchAverageRating(recipe.id);
+        return { ...recipe, averageRating };
+      }));
       this.loading = false;
     } catch (error) {
       this.errorMessage = error.message;

@@ -783,6 +783,21 @@ app.get('/ingredients', (req, res) => {
     });
   });
 
+// Endpoint pro získání průměrného hodnocení receptu
+app.get('/recipe/:id/average-rating', (req, res) => {
+    const recipeId = req.params.id;
+
+    const query = 'SELECT AVG(rating) as averageRating FROM ratings WHERE recipe_id = ?';
+    connection.query(query, [recipeId], (err, results) => {
+        if (err) {
+            console.error('Error fetching average rating:', err);
+            return res.status(500).json({ error: "Error fetching average rating." });
+        }
+
+        const averageRating = results[0].averageRating ? Math.round(results[0].averageRating) : 0;
+        res.status(200).json({ averageRating });
+    });
+});
 // Spuštění serveru
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);
