@@ -19,7 +19,7 @@
       <div v-for="recipe in recipes" :key="recipe.id" class="card mb-3 shadow-sm">
         <div class="card-body">
           <div class="d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">{{ recipe.title }} <span class="badge bg-primary">{{ getRatingText(recipe.averageRating) }}</span></h6>
+            <h6 class="card-title mb-0">{{ recipe.title }} <span class="badge bg-primary"> RATING: {{ getRatingText(recipe.averageRating) }}</span></h6>
             <div>
               <button
                 @click="toggleRecipeDetails(recipe.id)"

@@ -234,7 +234,6 @@ export default {
         this.selectedMealtypes = []; // Reset selected meal types
         this.selectedCategories = []; // Reset selected categories
 
-        alert('Recept byl úspěšně vytvořen!');
         this.$router.push('/');
       } catch (error) {
         console.error('Chyba při odesílání receptu:', error);
