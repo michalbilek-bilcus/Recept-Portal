@@ -122,29 +122,28 @@ export default {
   async mounted() {
     this.loading = true;
     try {
-      // Načtení všech typů jídel (mealtypes)
       const mealtypesResponse = await fetch('http://localhost:3000/mealtypes');
       if (!mealtypesResponse.ok) {
         throw new Error('Chyba při načítání typů jídel.');
       }
       const mealtypesData = await mealtypesResponse.json();
-      this.allMealtypes = mealtypesData.map(item => item.name); // Uložení názvů typů jídel do pole
+      this.allMealtypes = mealtypesData.map(item => item.name); 
 
-      // Načtení všech kategorií (categories)
+ 
       const categoriesResponse = await fetch('http://localhost:3000/categories');
       if (!categoriesResponse.ok) {
         throw new Error('Chyba při načítání kategorií.');
       }
       const categoriesData = await categoriesResponse.json();
-      this.allCategories = categoriesData.map(item => item.name); // Uložení názvů kategorií do pole
+      this.allCategories = categoriesData.map(item => item.name); 
 
-      // Načtení všech ingrediencí
+
       const ingredientsResponse = await fetch('http://localhost:3000/ingredients');
       if (!ingredientsResponse.ok) {
         throw new Error('Chyba při načítání ingrediencí.');
       }
       const ingredientsData = await ingredientsResponse.json();
-      this.allIngredients = ingredientsData.map(item => item.name); // Uložení názvů ingrediencí do pole
+      this.allIngredients = ingredientsData.map(item => item.name); 
     } catch (error) {
       this.errorMessage = error.message;
     } finally {
@@ -178,7 +177,6 @@ export default {
       this.instructions[index].showTimer = !this.instructions[index].showTimer;
     },
     async submitRecipe() {
-      // Spustíme validaci formuláře
       if (!this.validateForm()) {
         this.errorMessage = 'Vyplňte prosím všechna povinná pole.';
         return;
@@ -191,29 +189,26 @@ export default {
           return;
         }
 
-        // Prepare recipe data
         const recipeData = {
           userId: user.id,
           ...this.recipe,
           instructions: this.instructions.map((instruction, index) => {
-            // Calculate timer in seconds from hours, minutes, and seconds
             const timerInSeconds = (instruction.timer.hours * 3600) + (instruction.timer.minutes * 60) + instruction.timer.seconds;
 
             return {
               step_number: index + 1,
               text: instruction.text,
-              timer: timerInSeconds, // Odesíláme čas v sekundách
+              timer: timerInSeconds,
             };
           }),
           ingredients: this.ingredients.map(ingredient => ({
             name: ingredient.name,
             amount: ingredient.amount
           })),
-          mealtypes: this.selectedMealType ? [this.selectedMealType] : [],  // Ensure it's an array
-          categories: this.selectedCategory ? [this.selectedCategory] : []  // Ensure it's an array
+          mealtypes: this.selectedMealType ? [this.selectedMealType] : [],  
+          categories: this.selectedCategory ? [this.selectedCategory] : [] 
         };
 
-        // Send POST request to the server
         const response = await fetch('http://localhost:3000/recipes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -227,12 +222,12 @@ export default {
         const data = await response.json();
         console.log('Recept byl úspěšně vytvořen:', data);
 
-        // Reset form fields after successful creation
+      
         this.recipe = { title: '', description: '', image: '' };
         this.ingredients = [{ name: '', amount: '' }];
         this.instructions = [{ text: '', timer: { hours: 0, minutes: 0, seconds: 0 }, showTimer: false }];
-        this.selectedMealtypes = []; // Reset selected meal types
-        this.selectedCategories = []; // Reset selected categories
+        this.selectedMealtypes = []; 
+        this.selectedCategories = []; 
 
         this.$router.push('/');
       } catch (error) {
@@ -241,7 +236,6 @@ export default {
       }
     },
     validateForm() {
-      // Implement your form validation logic here
       return true;
     }
   }

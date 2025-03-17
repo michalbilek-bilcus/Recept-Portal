@@ -83,10 +83,9 @@
       </div>
     </div>
 
-    <!-- Zpráva o chybě -->
     <div v-if="errorMessage" class="alert alert-danger text-center">{{ errorMessage }}</div>
 
-    <!-- Recepty -->
+
     <div v-if="filteredRecipes.length === 0 && !loading && !errorMessage" class="text-center">
       <p>Žádné recepty nevyhovují vašemu hledání.</p>
     </div>
@@ -142,7 +141,7 @@ export default {
       searchMealType: '',
       searchCategory: '',
       searchTitle: '',
-      availableIngredients: ["mouka"], // Zde nahraďte skutečnými ingrediencemi
+      availableIngredients: ["mouka, vode, cukr, vejce"],
       loading: false,
       errorMessage: '',
       allIngredients: [],

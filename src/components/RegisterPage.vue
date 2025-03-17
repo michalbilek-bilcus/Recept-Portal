@@ -72,13 +72,10 @@ export default {
       const data = await response.json();
       console.log('Registrace úspěšná', data);
 
-      // Uložení informací o uživatelském účtu do localStorage
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Zavoláme metodu updateLoginStatus v App.vue pro změnu isLoggedIn na true
       this.$root.updateLoginStatus(true);
 
-      // Přesměrování na homepage po úspěšné registraci
       this.$router.push('/');
     } catch (error) {
       console.error('Chyba při registraci:', error);
@@ -86,7 +83,6 @@ export default {
     }
   },
   goHome() {
-    // Přesměrování na domovskou stránku
     this.$router.push('/');
   },
 },

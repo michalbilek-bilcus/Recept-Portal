@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
-const bcrypt = require('bcryptjs'); // Import bcrypt
+const bcrypt = require('bcryptjs');
 const app = express();
 const PORT = 3000;
 
@@ -68,7 +68,6 @@ app.post('/prihlaseni', (req, res) => {
 
         const user = results[0];
 
-        // Porovnání hesla s šifrovaným heslem v databázi
         bcrypt.compare(password, user.password, (err, isMatch) => {
             if (err) {
                 console.error('Chyba při ověřování hesla:', err);
@@ -88,12 +87,10 @@ app.post('/prihlaseni', (req, res) => {
 app.post('/recipes', (req, res) => {
     const { userId, title, description, image, instructions, ingredients, mealtypes, categories } = req.body;
 
-    // Validace povinných polí
     if (!title || !userId || instructions.length === 0 || ingredients.length === 0) {
         return res.status(400).json({ error: "Název, instrukce a ingredience jsou povinné." });
     }
 
-    // Uložení receptu
     const query = 'INSERT INTO recipes (user_id, title, description, image) VALUES (?, ?, ?, ?)';
     connection.query(query, [userId, title, description, image], (err, result) => {
         if (err) {
@@ -103,12 +100,11 @@ app.post('/recipes', (req, res) => {
 
         const recipeId = result.insertId;
 
-        // Uložení instrukcí
         instructions.forEach((instruction, index) => {
-            const timerInSeconds = instruction.timer || 0; // Pokud není nastaven časovač, uložíme 0
-            const hours = Math.floor(timerInSeconds / 3600); // Vypočítat hodiny
-            const minutes = Math.floor((timerInSeconds % 3600) / 60); // Vypočítat minuty
-            const seconds = timerInSeconds % 60; // Vypočítat sekundy
+            const timerInSeconds = instruction.timer || 0;
+            const hours = Math.floor(timerInSeconds / 3600);
+            const minutes = Math.floor((timerInSeconds % 3600) / 60); 
+            const seconds = timerInSeconds % 60;
 
             const instructionQuery = 'INSERT INTO recipe_instructions (recipe_id, step_number, instruction, timer_hours, timer_minutes, timer_seconds) VALUES (?, ?, ?, ?, ?, ?)';
             connection.query(instructionQuery, [recipeId, index + 1, instruction.text, hours, minutes, seconds], (err) => {
@@ -117,8 +113,6 @@ app.post('/recipes', (req, res) => {
                 }
             });
         });
-
-        // Uložení ingrediencí a vztahů mezi receptem a ingrediencemi
         ingredients.forEach((ingredient) => {
             const ingredientQuery = 'SELECT id FROM ingredients WHERE name = ?';
             connection.query(ingredientQuery, [ingredient.name], (err, result) => {
@@ -151,7 +145,6 @@ app.post('/recipes', (req, res) => {
             });
         });
 
-        // Uložení mealtypes (typy jídel)
         mealtypes.forEach((mealtypeName) => {
             const mealtypeQuery = 'SELECT id FROM mealtypes WHERE name = ?';
             connection.query(mealtypeQuery, [mealtypeName], (err, result) => {
@@ -178,7 +171,6 @@ app.post('/recipes', (req, res) => {
             });
         });
 
-        // Uložení categories (kategorie)
         categories.forEach((categoryName) => {
             const categoryQuery = 'SELECT id FROM categories WHERE name = ?';
             connection.query(categoryQuery, [categoryName], (err, result) => {
@@ -214,7 +206,6 @@ app.post('/recipes', (req, res) => {
 app.delete('/deleterecipe/:id', (req, res) => {
     const recipeId = req.params.id;
 
-    // Mazání závislých dat: každý DELETE se provede samostatně
     connection.query('DELETE FROM recipe_ingredients WHERE recipe_id = ?', [recipeId], (err) => {
         if (err) {
             console.error('Chyba při mazání závislých dat (recipe_ingredients):', err);
@@ -250,8 +241,6 @@ app.delete('/deleterecipe/:id', (req, res) => {
                                 console.error('Chyba při mazání závislých dat (comments):', err);
                                 return res.status(500).json({ error: 'Nastala chyba při mazání závislých dat (comments).' });
                             }
-
-                            // Mazání samotného receptu
                             connection.query('DELETE FROM recipes WHERE id = ?', [recipeId], (err) => {
                                 if (err) {
                                     console.error('Chyba při mazání receptu:', err);
@@ -270,7 +259,7 @@ app.delete('/deleterecipe/:id', (req, res) => {
 
 // Endpoint pro získání uživatelského profilu a jeho receptů
 app.get('/datareceptprofile', (req, res) => {
-    const userId = req.query.userId; // nebo z tokenu, pokud používáte autentifikaci pomocí JWT
+    const userId = req.query.userId;
 
     if (!userId) {
         return res.status(400).json({ error: "ID uživatele je povinné." });
@@ -312,7 +301,6 @@ app.get('/recipe/:recipeId', (req, res) => {
         return res.status(400).json({ error: "ID receptu je povinné." });
     }
 
-    // Dotaz pro získání základních informací o receptu
     const recipeQuery = `
         SELECT r.id, r.title, r.description, r.image, r.created_at, u.name AS author
         FROM recipes r
@@ -332,7 +320,6 @@ app.get('/recipe/:recipeId', (req, res) => {
 
         const recipe = recipeResults[0];
 
-        // Dotaz pro načtení ingrediencí receptu
         const ingredientsQuery = `
             SELECT i.name, ri.amount
             FROM recipe_ingredients ri
@@ -346,7 +333,6 @@ app.get('/recipe/:recipeId', (req, res) => {
                 return res.status(500).json({ error: "Chyba při načítání ingrediencí." });
             }
 
-            // Dotaz pro načtení kroků receptu včetně času
             const instructionsQuery = `
                 SELECT ri.step_number, ri.instruction, ri.timer_hours, ri.timer_minutes, ri.timer_seconds
                 FROM recipe_instructions ri
@@ -359,7 +345,6 @@ app.get('/recipe/:recipeId', (req, res) => {
                     return res.status(500).json({ error: "Chyba při načítání instrukcí." });
                 }
 
-                // Dotaz pro načtení mealtypes
                 const mealtypesQuery = `
                     SELECT mt.name
                     FROM recipe_mealtypes rmt
@@ -373,7 +358,6 @@ app.get('/recipe/:recipeId', (req, res) => {
                         return res.status(500).json({ error: "Chyba při načítání mealtypes." });
                     }
 
-                    // Dotaz pro načtení kategorií
                     const categoriesQuery = `
                         SELECT c.name
                         FROM recipe_categories rc
@@ -387,7 +371,6 @@ app.get('/recipe/:recipeId', (req, res) => {
                             return res.status(500).json({ error: "Chyba při načítání kategorií." });
                         }
 
-                        // Sestavení odpovědi do JSON formátu
                         const response = {
                             id: recipe.id,
                             title: recipe.title,
@@ -422,12 +405,10 @@ app.get('/recipe/:recipeId', (req, res) => {
 app.post('/favourites', (req, res) => {
     const { userId, recipeId, favourite } = req.body;
 
-    // Validate required fields
     if (userId === undefined || recipeId === undefined || favourite === undefined) {
         return res.status(400).json({ error: "userId, recipeId and favourite are required." });
     }
 
-    // Check if the favourite already exists for the user and recipe
     const checkQuery = 'SELECT * FROM ratings WHERE user_id = ? AND recipe_id = ?';
     connection.query(checkQuery, [userId, recipeId], (err, result) => {
         if (err) {
@@ -436,7 +417,6 @@ app.post('/favourites', (req, res) => {
         }
         
         if (result.length > 0) {
-            // If favourite exists, update it
             const updateQuery = 'UPDATE ratings SET favourite = ? WHERE user_id = ? AND recipe_id = ?';
             connection.query(updateQuery, [favourite, userId, recipeId], (err) => {
                 if (err) {
@@ -447,7 +427,6 @@ app.post('/favourites', (req, res) => {
                 res.status(200).json({ message: "Favourite updated." });
             });
         } else {
-            // If favourite does not exist, insert new favourite with default rating (e.g., 0)
             const insertQuery = 'INSERT INTO ratings (user_id, recipe_id, favourite, rating) VALUES (?, ?, ?, ?)';
             connection.query(insertQuery, [userId, recipeId, favourite, 0], (err) => {
                 if (err) {
@@ -465,12 +444,10 @@ app.post('/favourites', (req, res) => {
 app.post('/ratings', (req, res) => {
     const { userId, recipeId, rating } = req.body;
 
-    // Validate required fields
     if (userId === undefined || recipeId === undefined || rating === undefined) {
         return res.status(400).json({ error: "userId, recipeId and rating are required." });
     }
 
-    // Check if the rating already exists for the user and recipe
     const checkQuery = 'SELECT * FROM ratings WHERE user_id = ? AND recipe_id = ?';
     connection.query(checkQuery, [userId, recipeId], (err, result) => {
         if (err) {
@@ -479,7 +456,6 @@ app.post('/ratings', (req, res) => {
         }
         
         if (result.length > 0) {
-            // If rating exists, update it
             const updateQuery = 'UPDATE ratings SET rating = ? WHERE user_id = ? AND recipe_id = ?';
             connection.query(updateQuery, [rating, userId, recipeId], (err) => {
                 if (err) {
@@ -490,7 +466,6 @@ app.post('/ratings', (req, res) => {
                 res.status(200).json({ message: "Rating updated." });
             });
         } else {
-            // If rating does not exist, insert new rating with default favourite (e.g., 0)
             const insertQuery = 'INSERT INTO ratings (user_id, recipe_id, favourite, rating) VALUES (?, ?, ?, ?)';
             connection.query(insertQuery, [userId, recipeId, 0, rating], (err) => {
                 if (err) {
@@ -608,7 +583,6 @@ app.post('/comments', (req, res) => {
 
 
 app.get('/random-recipes', (req, res) => {
-    // Dotaz na všechny recepty včetně mealtypes a kategorií
     const query = `
         SELECT 
             r.id, 
@@ -636,7 +610,6 @@ app.get('/random-recipes', (req, res) => {
             return res.status(500).json({ error: 'Chyba při načítání receptů.' });
         }
 
-        // Zpracování výsledků a transformace do požadovaného formátu
         const formattedResults = results.map(recipe => ({
             id: recipe.id,
             title: recipe.title,
@@ -648,7 +621,7 @@ app.get('/random-recipes', (req, res) => {
             categories: recipe.categories ? recipe.categories.split(',') : []
         }));
 
-        res.json(formattedResults); // Vrátí všechny recepty v náhodném pořadí
+        res.json(formattedResults); 
     });
 });
 
@@ -704,11 +677,11 @@ app.get('/random-recipes', (req, res) => {
   
     sqlQuery += " GROUP BY r.id";
   
-    // Přidáme podmínku, že recept musí mít všechny vybrané ingredience
+    
     if (ingredients && ingredients.trim() !== '') {
       const ingredientsArray = ingredients.split(',').map(ing => ing.trim());
       sqlQuery += ` HAVING COUNT(DISTINCT i.name) = ?`;
-      queryParams.push(ingredientsArray.length); // Zajistíme, že bude mít všechny ingredience
+      queryParams.push(ingredientsArray.length);
     }
   
     connection.query(sqlQuery, queryParams, (err, results) => {
@@ -759,7 +732,7 @@ app.get('/ingredients', (req, res) => {
         console.error('Error fetching ingredients:', err);
         return res.status(500).json({ error: 'Error fetching ingredients.' });
       }
-      res.json(results); // Vrátí seznam ingrediencí
+      res.json(results);
     });
   });
 
@@ -769,7 +742,7 @@ app.get('/ingredients', (req, res) => {
         console.error('Error fetching mealtypes:', err);
         return res.status(500).json({ error: 'Error fetching mealtypes.' });
       }
-      res.json(results); // Vrátí seznam mealtypes
+      res.json(results);
     });
   });
 
@@ -779,7 +752,7 @@ app.get('/ingredients', (req, res) => {
         console.error('Error fetching categories:', err);
         return res.status(500).json({ error: 'Error fetching categories.' });
       }
-      res.json(results); // Vrátí seznam kategorii
+      res.json(results);
     });
   });
 
@@ -798,6 +771,7 @@ app.get('/recipe/:id/average-rating', (req, res) => {
         res.status(200).json({ averageRating });
     });
 });
+
 // Spuštění serveru
 app.listen(PORT, () => {
     console.log(`Server běží na http://localhost:${PORT}`);

@@ -4,9 +4,7 @@
     <div v-if="errorMessage" class="alert alert-danger text-center">{{ errorMessage }}</div>
 
     <div v-if="recipe">
-      <!-- Recipe Header -->
       <div class="row mb-4 border rounded p-3 bg-white">
-        <!-- Div pro obrázek -->
         <div class="col-md-6">
           <img 
             v-if="recipe.image" 
@@ -15,8 +13,6 @@
             class="img-fluid rounded shadow"
           />
         </div>
-
-        <!-- Div pro popis -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
         <div class="col-md-6 d-flex flex-column justify-content-center">
           <div class="d-flex align-items-center">
@@ -234,7 +230,6 @@ export default {
       }
       this.recipe = await response.json();
       
-      // Načtení hodnoty favourite
       const user = JSON.parse(localStorage.getItem('user'));
       if (user) {
         const favouriteResponse = await fetch(`http://localhost:3000/favourite?userId=${user.id}&recipeId=${recipeId}`);
@@ -250,7 +245,6 @@ export default {
         }
       }
 
-      // Načtení komentářů
       const commentsResponse = await fetch(`http://localhost:3000/comments?recipeId=${recipeId}`);
       if (commentsResponse.ok) {
         this.comments = await commentsResponse.json();
@@ -263,14 +257,12 @@ export default {
   },
   methods: {
     async toggleFavourite() {
-      // Get the logged-in user from localStorage
       const user = JSON.parse(localStorage.getItem('user'));
       if (!user) {
         this.errorMessage = "Musíte být přihlášeni, abyste mohli přidat hodnocení.";
         return;
       }
 
-      // Toggle the favourite state
       const favourite = this.isFavourite ? 0 : 1;
 
       try {
@@ -349,16 +341,14 @@ export default {
           throw new Error(`Chyba ${response.status}: ${response.statusText}`);
         }
 
-        // Přidání nového komentáře do seznamu komentářů a jeho seřazení
         const newComment = {
           ...commentData,
           user_name: user.name,
-          id: (await response.json()).id // Předpokládáme, že backend vrací ID nového komentáře
+          id: (await response.json()).id 
         };
         this.comments.push(newComment);
         this.comments.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
-        // Vyprázdnění pole pro nový komentář
         this.newComment = '';
       } catch (error) {
         this.errorMessage = error.message;
@@ -406,7 +396,6 @@ export default {
     },
     finishCooking() {
       this.isCooking = false;
-      // No alert after finishing
     },
     startTimer() {
       this.isTimerRunning = true;
@@ -507,7 +496,7 @@ export default {
 
 .comment {
   background-color: #f8f9fa;
-  text-align: left; /* Zarovnání všech komentářů vlevo */
+  text-align: left; 
 }
 
 .add-comment textarea {
