@@ -64,14 +64,6 @@ CREATE TABLE ratings (
   FOREIGN KEY (recipe_id) REFERENCES recipes(id),
   FOREIGN KEY (user_id) REFERENCES users(id) 
 );
-  CREATE TABLE recipe_instructions (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  recipe_id INT NOT NULL,
-  step_number INT NOT NULL,
-  instruction TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (recipe_id) REFERENCES recipes(id)
-);
 
 ALTER TABLE ratings
 ADD COLUMN favourite TINYINT DEFAULT 0;
